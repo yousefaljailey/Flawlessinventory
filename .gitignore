@@ -1,0 +1,8 @@
+node_modules/
+.env
+data/shops.json
+data/stock.json
+data/logs.json
+*.xlsx
+.DS_Store
+Thumbs.db

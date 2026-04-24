@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flawless — Inventory</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:          #060402;
+  --s1:          #0D0A07;
+  --s2:          #161108;
+  --s3:          #1E160C;
+  --gold:        #C9A84C;
+  --gold-l:      #E4C870;
+  --gold-dim:    rgba(201,168,76,0.12);
+  --gold-dim2:   rgba(201,168,76,0.06);
+  --text:        #F0E6D0;
+  --muted:       #8A7860;
+  --dim:         #5A4A38;
+  --border:      rgba(201,168,76,0.13);
+  --border-h:    rgba(201,168,76,0.32);
+  --red:         #FF4444;
+  --red-bg:      rgba(255,68,68,0.08);
+  --red-border:  rgba(255,68,68,0.3);
+  --green:       #52C07A;
+  --green-bg:    rgba(82,192,122,0.08);
+  --r:           10px;
+  --r-sm:        6px;
+}
+
+html, body {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--s1); }
+::-webkit-scrollbar-thumb { background: var(--s3); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--dim); }
+
+/* ── Nav ── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; height: 62px;
+  background: rgba(6,4,2,0.92);
+  backdrop-filter: blur(24px);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 0; padding: 0 28px;
+  z-index: 200;
+}
+
+.nav-logo {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 21px; font-weight: 700;
+  letter-spacing: 0.22em; color: var(--gold);
+  text-transform: uppercase; white-space: nowrap;
+}
+.nav-logo span { color: var(--muted); font-weight: 400; font-size: 11px; display: block; letter-spacing: 0.18em; margin-top: -4px; }
+
+.tab-bar { display: flex; gap: 2px; margin-left: 44px; }
+.tab-btn {
+  padding: 7px 18px;
+  font-size: 10.5px; font-weight: 600;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--muted); background: none;
+  border: none; border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: color 0.18s, background 0.18s;
+}
+.tab-btn:hover { color: var(--text); background: var(--gold-dim); }
+.tab-btn.active { color: var(--gold); background: var(--gold-dim); }
+
+.nav-spacer { flex: 1; }
+.nav-week {
+  font-size: 11px; color: var(--muted);
+  letter-spacing: 0.06em; white-space: nowrap;
+}
+
+/* ── Layout ── */
+main { padding: 90px 28px 48px; max-width: 1100px; margin: 0 auto; }
+
+/* ── Section headers ── */
+.section-hd {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 20px;
+}
+.section-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 28px; font-weight: 600;
+  color: var(--text); letter-spacing: -0.01em;
+}
+.section-sub {
+  font-size: 12px; color: var(--muted);
+  letter-spacing: 0.05em; margin-top: 2px;
+}
+
+/* ── Week nav ── */
+.week-nav {
+  display: flex; align-items: center; gap: 0;
+  background: var(--s1); border: 1px solid var(--border);
+  border-radius: var(--r); overflow: hidden; margin-bottom: 24px;
+}
+.week-btn {
+  padding: 10px 18px; background: none; border: none;
+  color: var(--muted); font-size: 20px; line-height: 1;
+  cursor: pointer; transition: color 0.15s, background 0.15s;
+}
+.week-btn:hover { color: var(--gold); background: var(--gold-dim); }
+.week-label {
+  flex: 1; text-align: center; padding: 10px 16px;
+  border-left: 1px solid var(--border); border-right: 1px solid var(--border);
+}
+.week-label strong { font-size: 13px; font-weight: 600; letter-spacing: 0.04em; }
+.week-label small   { display: block; font-size: 11px; color: var(--muted); margin-top: 1px; }
+
+/* ── Buttons ── */
+.btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 9px 20px; border-radius: var(--r-sm); border: none;
+  font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  cursor: pointer; transition: all 0.18s; white-space: nowrap;
+}
+.btn-primary {
+  background: var(--gold); color: #0A0806;
+}
+.btn-primary:hover { background: var(--gold-l); transform: translateY(-1px); }
+.btn-primary:active { transform: translateY(0); }
+.btn-ghost {
+  background: var(--gold-dim); color: var(--gold);
+  border: 1px solid var(--border-h);
+}
+.btn-ghost:hover { background: var(--gold-dim2); border-color: var(--gold); }
+.btn-danger {
+  background: var(--red-bg); color: var(--red);
+  border: 1px solid var(--red-border);
+}
+.btn-danger:hover { background: rgba(255,68,68,0.14); }
+.btn-sm { padding: 6px 14px; font-size: 11px; }
+.btn-icon { padding: 7px 12px; }
+
+/* ── Shop cards ── */
+.shops-grid { display: flex; flex-direction: column; gap: 6px; }
+
+.shop-card {
+  background: var(--s1); border: 1px solid var(--border);
+  border-radius: var(--r); overflow: hidden;
+  transition: border-color 0.2s;
+}
+.shop-card:hover { border-color: var(--border-h); }
+.shop-card.has-error { border-color: var(--red-border); }
+
+.shop-hd {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 15px 20px; cursor: pointer; user-select: none;
+  transition: background 0.15s;
+}
+.shop-hd:hover { background: var(--gold-dim2); }
+
+.shop-name-wrap { display: flex; align-items: center; gap: 10px; }
+.shop-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--gold); flex-shrink: 0;
+}
+.shop-dot.error { background: var(--red); }
+.shop-dot.empty { background: var(--s3); }
+.shop-name-txt {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 18px; font-weight: 600; color: var(--text);
+}
+
+.shop-meta { display: flex; align-items: center; gap: 10px; }
+.badge {
+  font-size: 10px; font-weight: 600; letter-spacing: 0.07em;
+  text-transform: uppercase; padding: 3px 10px; border-radius: 99px;
+}
+.badge-ok  { background: var(--green-bg); color: var(--green); }
+.badge-err { background: var(--red-bg); color: var(--red); }
+.badge-empty { background: var(--s3); color: var(--muted); }
+
+.chevron {
+  color: var(--muted); font-size: 18px; line-height: 1;
+  transition: transform 0.22s;
+}
+.chevron.open { transform: rotate(90deg); color: var(--gold); }
+
+/* ── Stock table ── */
+.shop-body { border-top: 1px solid var(--border); display: none; }
+.shop-body.open { display: block; }
+
+.stock-table { width: 100%; border-collapse: collapse; }
+.stock-table th {
+  padding: 10px 16px;
+  background: var(--s2); color: var(--muted);
+  font-size: 10.5px; font-weight: 600;
+  letter-spacing: 0.09em; text-transform: uppercase;
+  text-align: left; border-bottom: 1px solid var(--border);
+}
+.stock-table th:not(:first-child) { text-align: center; }
+.stock-table td {
+  padding: 9px 16px; border-bottom: 1px solid rgba(255,255,255,0.035);
+  color: var(--text);
+}
+.stock-table td:not(:first-child) { text-align: center; }
+.stock-table tr:last-child td { border-bottom: none; }
+
+.stock-table tr.row-error { background: var(--red-bg); }
+.stock-table tr.row-error .num-input { border-color: var(--red-border); }
+
+.product-name {
+  font-size: 13px; color: var(--text); white-space: nowrap;
+}
+
+.num-input {
+  width: 80px; padding: 6px 10px;
+  background: var(--s3); border: 1px solid var(--border);
+  border-radius: var(--r-sm); color: var(--text);
+  font-family: 'Inter', sans-serif; font-size: 14px;
+  text-align: center;
+  transition: border-color 0.18s, background 0.18s;
+  -moz-appearance: textfield;
+}
+.num-input::-webkit-inner-spin-button,
+.num-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+.num-input:focus { outline: none; border-color: var(--gold); background: var(--s2); }
+
+.status-cell { width: 70px; }
+.st-ok   { color: var(--green); font-size: 16px; }
+.st-err  { color: var(--red);   font-size: 16px; font-weight: 700; }
+.st-nil  { color: var(--dim);   font-size: 16px; }
+
+.shop-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px; background: var(--s2);
+  border-top: 1px solid var(--border);
+}
+.saved-msg {
+  font-size: 11px; color: var(--green);
+  opacity: 0; transition: opacity 0.3s;
+}
+.saved-msg.show { opacity: 1; }
+
+/* ── Inventory tab ── */
+.inv-table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--r); }
+.inv-table { width: 100%; border-collapse: collapse; min-width: 700px; }
+.inv-table th {
+  padding: 10px 14px; background: var(--s2); color: var(--muted);
+  font-size: 10.5px; font-weight: 600; letter-spacing: 0.08em;
+  text-transform: uppercase; white-space: nowrap;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+.inv-table th:not(:first-child):not(:nth-child(2)) { text-align: center; }
+.inv-table td {
+  padding: 9px 14px; border-bottom: 1px solid rgba(255,255,255,0.035);
+  font-size: 13px; white-space: nowrap;
+}
+.inv-table tr:last-child td { border-bottom: none; }
+.inv-table tr.inv-error { background: var(--red-bg); }
+.inv-table tr.inv-error td { color: var(--red); }
+.inv-table tr:nth-child(even):not(.inv-error) td { background: rgba(255,255,255,0.012); }
+
+.inv-filter {
+  display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap;
+}
+.filter-select {
+  padding: 8px 14px;
+  background: var(--s1); border: 1px solid var(--border);
+  border-radius: var(--r-sm); color: var(--text);
+  font-family: 'Inter', sans-serif; font-size: 12px;
+  cursor: pointer;
+}
+.filter-select:focus { outline: none; border-color: var(--gold); }
+
+/* ── Log tab ── */
+.log-list { display: flex; flex-direction: column; gap: 3px; }
+.log-item {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 11px 16px; background: var(--s1);
+  border: 1px solid var(--border); border-radius: var(--r-sm);
+  transition: border-color 0.15s;
+}
+.log-item:hover { border-color: var(--border-h); }
+.log-time {
+  font-size: 11px; color: var(--dim); white-space: nowrap;
+  padding-top: 1px; min-width: 130px;
+}
+.log-action { flex: 1; }
+.log-badge {
+  font-size: 9.5px; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; padding: 2px 8px; border-radius: 4px;
+  margin-right: 8px;
+}
+.lb-save  { background: rgba(201,168,76,0.15); color: var(--gold); }
+.lb-shop  { background: rgba(82,192,122,0.12); color: var(--green); }
+.lb-del   { background: var(--red-bg); color: var(--red); }
+.lb-email { background: rgba(100,149,237,0.12); color: #88AAEE; }
+.lb-other { background: var(--s3); color: var(--muted); }
+.log-desc { font-size: 12.5px; color: var(--text); }
+.log-sub  { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+.log-controls { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+
+/* ── Settings tab ── */
+.settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (max-width: 700px) { .settings-grid { grid-template-columns: 1fr; } }
+
+.settings-card {
+  background: var(--s1); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 24px;
+}
+.settings-card h3 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 20px; font-weight: 600;
+  color: var(--text); margin-bottom: 4px;
+}
+.settings-card p { font-size: 12px; color: var(--muted); margin-bottom: 18px; }
+
+.shop-list-manage { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+.shop-manage-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 9px 14px; background: var(--s2);
+  border: 1px solid var(--border); border-radius: var(--r-sm);
+}
+.shop-manage-name { font-size: 13px; color: var(--text); }
+.shop-manage-del {
+  background: none; border: none; color: var(--dim);
+  font-size: 18px; line-height: 1; cursor: pointer;
+  transition: color 0.15s; padding: 0 4px;
+}
+.shop-manage-del:hover { color: var(--red); }
+
+.add-shop-row { display: flex; gap: 8px; margin-top: 4px; }
+.text-input {
+  flex: 1; padding: 8px 14px;
+  background: var(--s2); border: 1px solid var(--border);
+  border-radius: var(--r-sm); color: var(--text);
+  font-family: 'Inter', sans-serif; font-size: 13px;
+}
+.text-input:focus { outline: none; border-color: var(--gold); }
+.text-input::placeholder { color: var(--dim); }
+
+.week-select-wrap { margin-bottom: 16px; }
+.week-select-wrap label { font-size: 11px; color: var(--muted); letter-spacing: 0.07em; text-transform: uppercase; display: block; margin-bottom: 6px; }
+
+.email-status {
+  font-size: 12px; padding: 10px 14px;
+  background: var(--s2); border-radius: var(--r-sm);
+  border: 1px solid var(--border); color: var(--muted);
+  margin-bottom: 14px;
+}
+.email-status strong { color: var(--text); display: block; margin-bottom: 3px; }
+
+/* ── Toast ── */
+.toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 999; display: flex; flex-direction: column; gap: 8px; }
+.toast {
+  padding: 12px 20px; border-radius: var(--r-sm);
+  font-size: 13px; font-weight: 500; max-width: 340px;
+  animation: slideIn 0.28s cubic-bezier(0.16,1,0.3,1);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+.toast-ok  { background: var(--s2); color: var(--green); border: 1px solid rgba(82,192,122,0.3); }
+.toast-err { background: var(--s2); color: var(--red);   border: 1px solid var(--red-border); }
+.toast-inf { background: var(--s2); color: var(--text);  border: 1px solid var(--border); }
+@keyframes slideIn {
+  from { transform: translateX(40px); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+/* ── Empty state ── */
+.empty {
+  text-align: center; padding: 60px 24px;
+  background: var(--s1); border: 1px dashed var(--border);
+  border-radius: var(--r); color: var(--muted);
+}
+.empty-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.4; }
+.empty h3 { font-family: 'Cormorant Garamond', serif; font-size: 20px; color: var(--text); margin-bottom: 6px; }
+.empty p  { font-size: 13px; }
+
+/* ── Loader ── */
+#loader {
+  position: fixed; inset: 0;
+  background: var(--bg); z-index: 9999;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 16px;
+}
+.loader-logo {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 32px; font-weight: 700;
+  letter-spacing: 0.25em; color: var(--gold);
+}
+.loader-ring {
+  width: 28px; height: 28px;
+  border: 2px solid var(--s3); border-top-color: var(--gold);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- Loader -->
+<div id="loader">
+  <div class="loader-logo">FLAWLESS</div>
+  <div class="loader-ring"></div>
+</div>
+
+<!-- Nav -->
+<nav>
+  <div class="nav-logo">Flawless <span>Inventory Management</span></div>
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="shops"     onclick="setTab('shops')">Shops</button>
+    <button class="tab-btn"        data-tab="inventory" onclick="setTab('inventory')">Inventory</button>
+    <button class="tab-btn"        data-tab="log"       onclick="setTab('log')">Log</button>
+    <button class="tab-btn"        data-tab="settings"  onclick="setTab('settings')">Settings</button>
+  </div>
+  <div class="nav-spacer"></div>
+  <div class="nav-week" id="nav-week-label"></div>
+</nav>
+
+<main>
+  <!-- ── SHOPS TAB ── -->
+  <div id="tab-shops">
+    <div class="section-hd">
+      <div>
+        <div class="section-title">Shop Restocking</div>
+        <div class="section-sub">Enter weekly stock figures for each shop</div>
+      </div>
+      <button class="btn btn-primary" onclick="openAddShop()">+ Add Shop</button>
+    </div>
+
+    <div class="week-nav">
+      <button class="week-btn" onclick="changeWeek(-1)">‹</button>
+      <div class="week-label">
+        <strong id="week-id-label">—</strong>
+        <small id="week-range-label">Loading…</small>
+      </div>
+      <button class="week-btn" onclick="changeWeek(+1)">›</button>
+    </div>
+
+    <div class="shops-grid" id="shops-list"></div>
+  </div>
+
+  <!-- ── INVENTORY TAB ── -->
+  <div id="tab-inventory" class="hidden">
+    <div class="section-hd">
+      <div>
+        <div class="section-title">Inventory Overview</div>
+        <div class="section-sub">All shops and products for selected week</div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="downloadReport()">⬇ Download Excel</button>
+    </div>
+
+    <div class="inv-filter">
+      <select class="filter-select" id="inv-shop-filter" onchange="renderInventory()">
+        <option value="">All Shops</option>
+      </select>
+      <select class="filter-select" id="inv-product-filter" onchange="renderInventory()">
+        <option value="">All Products</option>
+      </select>
+      <select class="filter-select" id="inv-status-filter" onchange="renderInventory()">
+        <option value="">All Statuses</option>
+        <option value="ok">OK Only</option>
+        <option value="mismatch">Mismatches Only</option>
+        <option value="empty">Not Entered</option>
+      </select>
+    </div>
+
+    <div class="inv-table-wrap">
+      <table class="inv-table" id="inv-table">
+        <thead>
+          <tr>
+            <th>Shop</th>
+            <th>Product</th>
+            <th>Provided</th>
+            <th>Sold</th>
+            <th>Remaining</th>
+            <th>Expected</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="inv-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── LOG TAB ── -->
+  <div id="tab-log" class="hidden">
+    <div class="log-controls">
+      <div>
+        <div class="section-title">Activity Log</div>
+        <div class="section-sub">All saved changes and actions</div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="loadLogs(true)">↺ Refresh</button>
+    </div>
+    <div class="log-list" id="log-list"></div>
+  </div>
+
+  <!-- ── SETTINGS TAB ── -->
+  <div id="tab-settings" class="hidden">
+    <div class="section-hd" style="margin-bottom:20px">
+      <div>
+        <div class="section-title">Settings</div>
+        <div class="section-sub">Manage shops, email reports</div>
+      </div>
+    </div>
+
+    <div class="settings-grid">
+      <!-- Shops management -->
+      <div class="settings-card">
+        <h3>Manage Shops</h3>
+        <p>Add or remove shops from the weekly restock list</p>
+        <div class="shop-list-manage" id="settings-shop-list"></div>
+        <div class="add-shop-row">
+          <input type="text" class="text-input" id="add-shop-input" placeholder="Shop name…" onkeydown="if(event.key==='Enter') addShop()">
+          <button class="btn btn-primary btn-sm" onclick="addShop()">Add</button>
+        </div>
+      </div>
+
+      <!-- Email report -->
+      <div class="settings-card">
+        <h3>Email Report</h3>
+        <p>Send weekly stock report to flawlessperfumesmanagement@gmail.com</p>
+
+        <div class="email-status">
+          <strong>Recipient</strong>
+          flawlessperfumesmanagement@gmail.com
+        </div>
+
+        <div class="week-select-wrap">
+          <label>Week to report</label>
+          <select class="filter-select" id="report-week-select" style="width:100%"></select>
+        </div>
+
+        <button class="btn btn-primary" style="width:100%" onclick="sendReport()">
+          ✉ Send Report Now
+        </button>
+        <div style="margin-top:10px">
+          <button class="btn btn-ghost btn-sm" style="width:100%" onclick="downloadReport()">
+            ⬇ Download as Excel
+          </button>
+        </div>
+
+        <p style="margin-top:16px;font-size:11px;color:var(--dim)">
+          Automatic emails are sent every Sunday at 9:00 AM. Configure email credentials by copying <code style="color:var(--muted)">.env.example</code> to <code style="color:var(--muted)">.env</code> and filling in your Gmail app password.
+        </p>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Toast container -->
+<div class="toast-container" id="toasts"></div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+const S = {
+  tab:      'shops',
+  week:     '',
+  shops:    [],
+  products: [],
+  stock:    {},   // { [shop]: { [product]: { provided, sold, remaining } } }
+  logs:     [],
+  expanded: new Set()
+};
+
+// ── API ────────────────────────────────────────────────────────────────────
+const api = {
+  get:    u      => fetch(u).then(r => r.json()),
+  post:   (u, b) => fetch(u, { method: 'POST',   headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(b) }).then(r => r.json()),
+  delete: u      => fetch(u, { method: 'DELETE' }).then(r => r.json())
+};
+
+// ── Week utilities ─────────────────────────────────────────────────────────
+function getCurrentWeekId() {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() + 3 - (d.getDay() + 6) % 7);
+  const w1 = new Date(d.getFullYear(), 0, 4);
+  const n  = 1 + Math.round(((d - w1) / 86400000 - 3 + (w1.getDay() + 6) % 7) / 7);
+  return `${d.getFullYear()}-W${String(n).padStart(2, '0')}`;
+}
+
+function weekStartDate(weekId) {
+  const [yr, wn] = weekId.split('-W').map(Number);
+  const w1s = new Date(yr, 0, 4);
+  w1s.setDate(w1s.getDate() - ((w1s.getDay() + 6) % 7));
+  const start = new Date(w1s);
+  start.setDate(start.getDate() + (wn - 1) * 7);
+  return start;
+}
+
+function weekRange(weekId) {
+  const start = weekStartDate(weekId);
+  const end   = new Date(start); end.setDate(start.getDate() + 6);
+  const fmt   = d => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  return `${fmt(start)} – ${fmt(end)}, ${end.getFullYear()}`;
+}
+
+function offsetWeek(weekId, delta) {
+  const d = weekStartDate(weekId);
+  d.setDate(d.getDate() + delta * 7);
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() + 3 - (d.getDay() + 6) % 7);
+  const w1 = new Date(d.getFullYear(), 0, 4);
+  const n  = 1 + Math.round(((d - w1) / 86400000 - 3 + (w1.getDay() + 6) % 7) / 7);
+  return `${d.getFullYear()}-W${String(n).padStart(2, '0')}`;
+}
+
+function getRecentWeeks(n = 8) {
+  const cur = getCurrentWeekId();
+  const weeks = [];
+  for (let i = 0; i < n; i++) weeks.push(offsetWeek(cur, -i));
+  return weeks;
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+async function init() {
+  try {
+    S.week = getCurrentWeekId();
+    const [shops, products] = await Promise.all([
+      api.get('/api/shops'),
+      api.get('/api/products')
+    ]);
+    S.shops    = shops;
+    S.products = products;
+    await loadStock();
+    await loadLogs();
+    renderAll();
+  } finally {
+    document.getElementById('loader').style.display = 'none';
+  }
+}
+
+async function loadStock() {
+  S.stock = await api.get(`/api/stock/${S.week}`);
+}
+
+async function loadLogs(force = false) {
+  if (force || S.logs.length === 0) {
+    S.logs = await api.get('/api/logs?limit=200');
+  }
+}
+
+// ── Tab routing ────────────────────────────────────────────────────────────
+function setTab(tab) {
+  S.tab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.tab === tab)
+  );
+  ['shops','inventory','log','settings'].forEach(t => {
+    const el = document.getElementById(`tab-${t}`);
+    el.classList.toggle('hidden', t !== tab);
+  });
+  if (tab === 'inventory') renderInventory();
+  if (tab === 'log')       renderLog();
+  if (tab === 'settings')  renderSettings();
+}
+
+// ── Week navigation ────────────────────────────────────────────────────────
+async function changeWeek(delta) {
+  S.week = offsetWeek(S.week, delta);
+  await loadStock();
+  renderShops();
+  updateWeekLabels();
+}
+
+function updateWeekLabels() {
+  const range = weekRange(S.week);
+  document.getElementById('week-id-label').textContent  = S.week;
+  document.getElementById('week-range-label').textContent = range;
+  document.getElementById('nav-week-label').textContent  = S.week + ' · ' + range;
+}
+
+// ── Render all ─────────────────────────────────────────────────────────────
+function renderAll() {
+  updateWeekLabels();
+  renderShops();
+  populateFilters();
+}
+
+// ── SHOPS ──────────────────────────────────────────────────────────────────
+function renderShops() {
+  const container = document.getElementById('shops-list');
+  if (S.shops.length === 0) {
+    container.innerHTML = `
+      <div class="empty">
+        <div class="empty-icon">🏪</div>
+        <h3>No shops yet</h3>
+        <p>Click "Add Shop" to start tracking inventory</p>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = S.shops.map(shop => buildShopCard(shop)).join('');
+  // Re-expand previously expanded shops
+  S.expanded.forEach(shop => {
+    const id = shopId(shop);
+    const body    = document.getElementById(`body-${id}`);
+    const chevron = document.getElementById(`chev-${id}`);
+    if (body)    body.classList.add('open');
+    if (chevron) chevron.classList.add('open');
+  });
+
+  // Attach live validation
+  container.querySelectorAll('.num-input').forEach(input =>
+    input.addEventListener('input', onInputChange)
+  );
+}
+
+function shopId(name) {
+  return btoa(encodeURIComponent(name)).replace(/=/g, '');
+}
+
+function buildShopCard(shop) {
+  const shopStock = S.stock[shop] || {};
+  let hasAny = false, hasMismatch = false;
+
+  const rows = S.products.map(product => {
+    const e   = shopStock[product] || {};
+    const prov = e.provided  || 0;
+    const sold = e.sold      || 0;
+    const rem  = e.remaining || 0;
+    const hasData = prov > 0 || sold > 0 || rem > 0;
+    if (hasData) hasAny = true;
+    const expected = prov - sold;
+    const mismatch = hasData && rem !== expected;
+    if (mismatch) hasMismatch = true;
+
+    const statusHtml = !hasData
+      ? `<span class="st-nil">—</span>`
+      : mismatch
+        ? `<span class="st-err" title="Expected ${expected}">✗</span>`
+        : `<span class="st-ok">✓</span>`;
+
+    return `<tr class="${mismatch ? 'row-error' : ''}" data-shop="${esc(shop)}" data-product="${esc(product)}">
+      <td class="product-name">${esc(product)}</td>
+      <td><input type="number" class="num-input" data-field="provided"  value="${prov}" min="0" placeholder="0"></td>
+      <td><input type="number" class="num-input" data-field="sold"      value="${sold}" min="0" placeholder="0"></td>
+      <td><input type="number" class="num-input" data-field="remaining" value="${rem}"  min="0" placeholder="0"></td>
+      <td class="status-cell">${statusHtml}</td>
+    </tr>`;
+  }).join('');
+
+  const id     = shopId(shop);
+  const dotCls = !hasAny ? 'empty' : hasMismatch ? 'error' : '';
+  const badge  = !hasAny
+    ? `<span class="badge badge-empty">Not entered</span>`
+    : hasMismatch
+      ? `<span class="badge badge-err">⚠ Mismatch</span>`
+      : `<span class="badge badge-ok">✓ All OK</span>`;
+
+  return `
+    <div class="shop-card ${hasMismatch ? 'has-error' : ''}" id="card-${id}">
+      <div class="shop-hd" onclick="toggleShop('${esc(shop)}')">
+        <div class="shop-name-wrap">
+          <div class="shop-dot ${dotCls}"></div>
+          <div class="shop-name-txt">${esc(shop)}</div>
+        </div>
+        <div class="shop-meta">
+          ${badge}
+          <span class="chevron" id="chev-${id}">›</span>
+        </div>
+      </div>
+      <div class="shop-body" id="body-${id}">
+        <table class="stock-table">
+          <thead><tr>
+            <th>Product</th>
+            <th>Provided</th>
+            <th>Sold</th>
+            <th>Remaining</th>
+            <th>Status</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <div class="shop-footer">
+          <span class="saved-msg" id="saved-${id}">✓ Saved</span>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-danger btn-sm" onclick="confirmDeleteShop('${esc(shop)}')">Remove</button>
+            <button class="btn btn-primary btn-sm" onclick="saveShop('${esc(shop)}')">Save Changes</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function toggleShop(shop) {
+  const id      = shopId(shop);
+  const body    = document.getElementById(`body-${id}`);
+  const chevron = document.getElementById(`chev-${id}`);
+  if (!body) return;
+  const open = body.classList.toggle('open');
+  chevron.classList.toggle('open', open);
+  if (open) S.expanded.add(shop); else S.expanded.delete(shop);
+}
+
+function onInputChange(e) {
+  const row     = e.target.closest('tr');
+  const shop    = row.dataset.shop;
+  const product = row.dataset.product;
+  const prov = +row.querySelector('[data-field="provided"]').value  || 0;
+  const sold = +row.querySelector('[data-field="sold"]').value      || 0;
+  const rem  = +row.querySelector('[data-field="remaining"]').value || 0;
+  const hasData = prov > 0 || sold > 0 || rem > 0;
+  const expected = prov - sold;
+  const mismatch = hasData && rem !== expected;
+  row.classList.toggle('row-error', mismatch);
+  const statusCell = row.querySelector('.status-cell');
+  statusCell.innerHTML = !hasData
+    ? `<span class="st-nil">—</span>`
+    : mismatch
+      ? `<span class="st-err" title="Expected ${expected}">✗</span>`
+      : `<span class="st-ok">✓</span>`;
+}
+
+async function saveShop(shop) {
+  const id      = shopId(shop);
+  const card    = document.getElementById(`card-${id}`);
+  const rows    = card.querySelectorAll('tbody tr');
+  const products = {};
+  rows.forEach(row => {
+    const product = row.dataset.product;
+    products[product] = {
+      provided:  +row.querySelector('[data-field="provided"]').value  || 0,
+      sold:      +row.querySelector('[data-field="sold"]').value      || 0,
+      remaining: +row.querySelector('[data-field="remaining"]').value || 0
+    };
+  });
+
+  const res = await api.post('/api/stock/bulk', { shop, week: S.week, products });
+  if (res.success) {
+    const msg = document.getElementById(`saved-${id}`);
+    msg.classList.add('show');
+    setTimeout(() => msg.classList.remove('show'), 2500);
+    S.stock[shop] = products;
+    // Refresh the card header badges
+    const tmp = document.createElement('div');
+    tmp.innerHTML = buildShopCard(shop);
+    const newCard = tmp.firstElementChild;
+    const hd = card.querySelector('.shop-hd');
+    hd.replaceWith(newCard.querySelector('.shop-hd'));
+    card.classList.toggle('has-error', !!card.querySelector('.row-error'));
+    toast('Saved!', 'ok');
+  } else {
+    toast(res.error || 'Save failed', 'err');
+  }
+}
+
+function openAddShop() { setTab('settings'); }
+
+async function addShop() {
+  const input = document.getElementById('add-shop-input');
+  const name  = input.value.trim();
+  if (!name) return;
+  const res = await api.post('/api/shops', { name });
+  if (res.success) {
+    S.shops.push(name);
+    input.value = '';
+    renderShops();
+    renderSettings();
+    populateFilters();
+    toast(`Shop "${name}" added`, 'ok');
+  } else {
+    toast(res.error || 'Could not add shop', 'err');
+  }
+}
+
+function confirmDeleteShop(shop) {
+  if (!confirm(`Remove "${shop}" from the shop list? This won't delete historical stock data.`)) return;
+  deleteShop(shop);
+}
+
+async function deleteShop(shop) {
+  const res = await api.delete(`/api/shops/${encodeURIComponent(shop)}`);
+  if (res.success) {
+    S.shops = S.shops.filter(s => s !== shop);
+    S.expanded.delete(shop);
+    renderShops();
+    renderSettings();
+    populateFilters();
+    toast(`Shop "${shop}" removed`, 'ok');
+  } else {
+    toast('Could not remove shop', 'err');
+  }
+}
+
+// ── INVENTORY ──────────────────────────────────────────────────────────────
+function populateFilters() {
+  const shopSel = document.getElementById('inv-shop-filter');
+  const cur     = shopSel.value;
+  shopSel.innerHTML = `<option value="">All Shops</option>` +
+    S.shops.map(s => `<option value="${esc(s)}" ${s === cur ? 'selected' : ''}>${esc(s)}</option>`).join('');
+
+  const prodSel  = document.getElementById('inv-product-filter');
+  const curProd  = prodSel.value;
+  prodSel.innerHTML = `<option value="">All Products</option>` +
+    S.products.map(p => `<option value="${esc(p)}" ${p === curProd ? 'selected' : ''}>${esc(p)}</option>`).join('');
+
+  const weeks    = getRecentWeeks(12);
+  const rptSel   = document.getElementById('report-week-select');
+  if (rptSel) {
+    rptSel.innerHTML = weeks.map(w =>
+      `<option value="${w}" ${w === S.week ? 'selected' : ''}>${w} — ${weekRange(w)}</option>`
+    ).join('');
+  }
+}
+
+function renderInventory() {
+  const shopFilter   = document.getElementById('inv-shop-filter').value;
+  const prodFilter   = document.getElementById('inv-product-filter').value;
+  const statusFilter = document.getElementById('inv-status-filter').value;
+
+  const shops    = shopFilter ? [shopFilter] : S.shops;
+  const products = prodFilter ? [prodFilter] : S.products;
+
+  let html = '';
+  shops.forEach(shop => {
+    const shopStock = S.stock[shop] || {};
+    products.forEach(product => {
+      const e    = shopStock[product] || {};
+      const prov = e.provided  || 0;
+      const sold = e.sold      || 0;
+      const rem  = e.remaining || 0;
+      const exp  = prov - sold;
+      const hasData   = prov > 0 || sold > 0 || rem > 0;
+      const mismatch  = hasData && rem !== exp;
+      const statusKey = !hasData ? 'empty' : mismatch ? 'mismatch' : 'ok';
+
+      if (statusFilter && statusFilter !== statusKey) return;
+
+      const statusHtml = !hasData
+        ? `<span style="color:var(--dim)">—</span>`
+        : mismatch
+          ? `<span style="color:var(--red);font-weight:700">⚠ Mismatch</span>`
+          : `<span style="color:var(--green)">✓ OK</span>`;
+
+      html += `<tr class="${mismatch ? 'inv-error' : ''}">
+        <td>${esc(shop)}</td>
+        <td>${esc(product)}</td>
+        <td>${prov}</td>
+        <td>${sold}</td>
+        <td>${rem}</td>
+        <td>${hasData ? exp : '—'}</td>
+        <td>${statusHtml}</td>
+      </tr>`;
+    });
+  });
+
+  document.getElementById('inv-body').innerHTML = html ||
+    `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--muted)">No data for this selection</td></tr>`;
+}
+
+// ── LOG ────────────────────────────────────────────────────────────────────
+async function renderLog(force = false) {
+  await loadLogs(force);
+  const container = document.getElementById('log-list');
+  if (S.logs.length === 0) {
+    container.innerHTML = `<div class="empty"><div class="empty-icon">📋</div><h3>No activity yet</h3><p>Changes will appear here</p></div>`;
+    return;
+  }
+
+  const actionMeta = {
+    STOCK_SAVE:  { badge: 'lb-save',  label: 'Saved' },
+    BULK_SAVE:   { badge: 'lb-save',  label: 'Saved' },
+    STOCK_UPDATE:{ badge: 'lb-save',  label: 'Updated' },
+    ADD_SHOP:    { badge: 'lb-shop',  label: 'Shop Added' },
+    REMOVE_SHOP: { badge: 'lb-del',   label: 'Shop Removed' },
+    EMAIL_SENT:  { badge: 'lb-email', label: 'Email Sent' },
+  };
+
+  container.innerHTML = S.logs.map(log => {
+    const meta = actionMeta[log.action] || { badge: 'lb-other', label: log.action };
+    const ts   = new Date(log.timestamp);
+    const timeStr = ts.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+                  + ' ' + ts.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+
+    let desc = '', sub = '';
+    if (log.shop && log.week) {
+      desc = esc(log.shop);
+      sub  = `Week ${log.week}${log.products ? ` · ${log.products} product(s)` : ''}`;
+    } else if (log.shop) {
+      desc = esc(log.shop);
+    } else if (log.to) {
+      desc = `Sent to ${esc(log.to)}`;
+      sub  = `Week ${log.week}`;
+    }
+
+    return `<div class="log-item">
+      <span class="log-time">${timeStr}</span>
+      <div class="log-action">
+        <span class="log-badge ${meta.badge}">${meta.label}</span>
+        <span class="log-desc">${desc}</span>
+        ${sub ? `<div class="log-sub">${sub}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── SETTINGS ───────────────────────────────────────────────────────────────
+function renderSettings() {
+  const container = document.getElementById('settings-shop-list');
+  container.innerHTML = S.shops.length === 0
+    ? `<p style="color:var(--muted);font-size:12px">No shops added yet</p>`
+    : S.shops.map(shop => `
+        <div class="shop-manage-row">
+          <span class="shop-manage-name">${esc(shop)}</span>
+          <button class="shop-manage-del" onclick="confirmDeleteShop('${esc(shop)}')" title="Remove shop">×</button>
+        </div>`).join('');
+
+  populateFilters();
+}
+
+// ── Report ─────────────────────────────────────────────────────────────────
+function downloadReport() {
+  const week = document.getElementById('report-week-select')?.value || S.week;
+  window.open(`/api/report/${week}`, '_blank');
+}
+
+async function sendReport() {
+  const week = document.getElementById('report-week-select')?.value || S.week;
+  const btn  = event.target;
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+  try {
+    const res = await api.post('/api/send-report', { week });
+    if (res.success) {
+      toast(res.message || 'Report sent!', 'ok');
+      S.logs = [];
+      if (S.tab === 'log') renderLog(true);
+    } else {
+      toast(res.error || 'Failed to send', 'err');
+    }
+  } catch (e) {
+    toast('Network error', 'err');
+  }
+  btn.disabled = false;
+  btn.textContent = '✉ Send Report Now';
+}
+
+// ── Toast ──────────────────────────────────────────────────────────────────
+function toast(msg, type = 'inf') {
+  const el = document.createElement('div');
+  el.className = `toast toast-${type}`;
+  el.textContent = msg;
+  document.getElementById('toasts').appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+// ── Escape ─────────────────────────────────────────────────────────────────
+function esc(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// ── Boot ───────────────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>

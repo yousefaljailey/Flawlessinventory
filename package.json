@@ -4,9 +4,11 @@
   "description": "Flawless Perfumes Weekly Inventory Management",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "node server.js"
   },
   "dependencies": {
+    "@vercel/kv": "^2.0.0",
     "dotenv": "^16.4.5",
     "exceljs": "^4.4.0",
     "express": "^4.19.2",

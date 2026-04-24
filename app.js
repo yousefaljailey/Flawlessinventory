@@ -1,13 +1,15 @@
-const express  = require('express');
+const express   = require('express');
 const nodemailer = require('nodemailer');
-const ExcelJS  = require('exceljs');
-const path     = require('path');
-const storage  = require('./lib/storage');
+const ExcelJS   = require('exceljs');
+const crypto    = require('crypto');
+const path      = require('path');
+const storage   = require('./lib/storage');
 
 const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// ── Constants ─────────────────────────────────────────────────────────────────
 const PRODUCTS = [
   'Monte-Carlo 30ml',
   'Monte-Carlo 100ml',
@@ -16,6 +18,67 @@ const PRODUCTS = [
   'Rub Al Khali 30ml',
   'Discovery Set'
 ];
+
+const DEFAULT_SHOPS = [
+  "Ardi's Barbershop",
+  "Family's Barber",
+  "Hair Essence",
+  "Romana Paulen",
+  "Pilateez",
+  "Elevated Studio"
+];
+
+const WA_NUMBER = '33758033774';
+const REPORT_EMAIL = 'flawlessperfumesmanagement@gmail.com';
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+const AUTH_SECRET = process.env.AUTH_SECRET || 'fl4wl3ss-inv-2026-secret';
+const USERS = { flawless: 'Flawless123' };
+
+function makeToken(username) {
+  const data = `${username}:${Date.now()}`;
+  const sig  = crypto.createHmac('sha256', AUTH_SECRET).update(data).digest('hex');
+  return Buffer.from(`${data}:${sig}`).toString('base64');
+}
+
+function verifyToken(token) {
+  if (!token) return null;
+  try {
+    const decoded = Buffer.from(token, 'base64').toString();
+    const parts   = decoded.split(':');
+    if (parts.length < 3) return null;
+    const sig  = parts.pop();
+    const data = parts.join(':');
+    const expected = crypto.createHmac('sha256', AUTH_SECRET).update(data).digest('hex');
+    if (sig !== expected) return null;
+    const [username, ts] = parts;
+    if (Date.now() - Number(ts) > 7 * 24 * 60 * 60 * 1000) return null; // 7 days
+    return username;
+  } catch { return null; }
+}
+
+function requireAuth(req, res, next) {
+  const token = (req.headers.authorization || '').replace('Bearer ', '').trim();
+  const user  = verifyToken(token);
+  if (!user) return res.status(401).json({ error: 'Unauthorized' });
+  req.user = user;
+  next();
+}
+
+app.post('/api/auth', (req, res) => {
+  const { username, password } = req.body || {};
+  if (!username || !password) return res.status(400).json({ error: 'Missing credentials' });
+  if (USERS[username.toLowerCase()] !== password) {
+    return res.status(401).json({ error: 'Invalid username or password' });
+  }
+  res.json({ success: true, token: makeToken(username.toLowerCase()) });
+});
+
+app.post('/api/auth/verify', (req, res) => {
+  const token = (req.headers.authorization || '').replace('Bearer ', '').trim();
+  const user  = verifyToken(token);
+  res.json({ valid: !!user, user });
+});
 
 // ── Week helpers ──────────────────────────────────────────────────────────────
 function getWeekId(date = new Date()) {
@@ -39,6 +102,19 @@ function weekRange(weekId) {
   return `${fmt(start)} – ${fmt(end)}`;
 }
 
+// ── Normalize stock entry (handles old + new format) ─────────────────────────
+function normalizeEntry(e) {
+  if (!e) return { initialQty: 0, soldQty: 0, topUp: 0 };
+  // Old format migration: provided → initialQty, sold → soldQty
+  if ('provided' in e) return { initialQty: e.provided || 0, soldQty: e.sold || 0, topUp: e.topUp || 0 };
+  return { initialQty: e.initialQty || 0, soldQty: e.soldQty || 0, topUp: e.topUp || 0 };
+}
+
+function currentStock(e) {
+  const n = normalizeEntry(e);
+  return n.initialQty + n.topUp - n.soldQty;
+}
+
 async function addLog(entry) {
   const logs = await storage.get('logs');
   logs.unshift({ ...entry, timestamp: new Date().toISOString() });
@@ -46,12 +122,24 @@ async function addLog(entry) {
 }
 
 // ── API: Shops ────────────────────────────────────────────────────────────────
-app.get('/api/shops', async (_, res) => {
-  try { res.json(await storage.get('shops')); }
-  catch (e) { res.status(500).json({ error: e.message }); }
+app.get('/api/shops', requireAuth, async (_, res) => {
+  try {
+    let shops = await storage.get('shops');
+    // Seed defaults on first run
+    if (!shops || shops.length === 0) {
+      const initialized = await storage.get('shops_initialized');
+      if (!initialized) {
+        shops = [...DEFAULT_SHOPS];
+        await storage.set('shops', shops);
+        await storage.set('shops_initialized', true);
+        await addLog({ action: 'INIT_SHOPS', count: shops.length });
+      }
+    }
+    res.json(shops || []);
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.post('/api/shops', async (req, res) => {
+app.post('/api/shops', requireAuth, async (req, res) => {
   try {
     const name = req.body.name?.trim();
     if (!name) return res.status(400).json({ error: 'Shop name required' });
@@ -64,7 +152,7 @@ app.post('/api/shops', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.delete('/api/shops/:name', async (req, res) => {
+app.delete('/api/shops/:name', requireAuth, async (req, res) => {
   try {
     const name  = decodeURIComponent(req.params.name);
     const shops = await storage.get('shops');
@@ -75,17 +163,17 @@ app.delete('/api/shops/:name', async (req, res) => {
 });
 
 // ── API: Products ─────────────────────────────────────────────────────────────
-app.get('/api/products', (_, res) => res.json(PRODUCTS));
+app.get('/api/products', requireAuth, (_, res) => res.json(PRODUCTS));
 
 // ── API: Stock ────────────────────────────────────────────────────────────────
-app.get('/api/stock/:week', async (req, res) => {
+app.get('/api/stock/:week', requireAuth, async (req, res) => {
   try {
     const stock = await storage.get('stock');
     res.json(stock[req.params.week] || {});
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.post('/api/stock/bulk', async (req, res) => {
+app.post('/api/stock/bulk', requireAuth, async (req, res) => {
   try {
     const { shop, week, products } = req.body;
     if (!shop || !week || !products) return res.status(400).json({ error: 'Missing fields' });
@@ -97,9 +185,9 @@ app.post('/api/stock/bulk', async (req, res) => {
     const saved = new Date().toISOString();
     for (const [product, vals] of Object.entries(products)) {
       stock[week][shop][product] = {
-        provided:  Math.max(0, Number(vals.provided)  || 0),
-        sold:      Math.max(0, Number(vals.sold)       || 0),
-        remaining: Math.max(0, Number(vals.remaining)  || 0),
+        initialQty: Math.max(0, Number(vals.initialQty) || 0),
+        soldQty:    Math.max(0, Number(vals.soldQty)    || 0),
+        topUp:      Math.max(0, Number(vals.topUp)      || 0),
         savedAt: saved
       };
     }
@@ -110,7 +198,7 @@ app.post('/api/stock/bulk', async (req, res) => {
 });
 
 // ── API: Logs ─────────────────────────────────────────────────────────────────
-app.get('/api/logs', async (req, res) => {
+app.get('/api/logs', requireAuth, async (req, res) => {
   try {
     const limit = Math.min(Number(req.query.limit) || 200, 2000);
     const logs  = await storage.get('logs');
@@ -135,52 +223,50 @@ async function buildWorkbook(week) {
 
   const ws = wb.addWorksheet(`Week ${week}`, { pageSetup: { fitToPage: true, fitToWidth: 1 } });
 
+  // Title
   ws.mergeCells('A1:G1');
   const title = ws.getCell('A1');
   title.value     = `FLAWLESS PERFUMES — Stock Report ${week}  (${weekRange(week)})`;
-  title.font      = { name: 'Calibri', size: 14, bold: true, color: { argb: 'FFC9A84C' } };
-  title.fill      = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0A0806' } };
+  title.font      = { name: 'Calibri', size: 14, bold: true, color: { argb: 'FF1A1A1A' } };
+  title.fill      = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE1CBBD' } };
   title.alignment = { horizontal: 'center', vertical: 'middle' };
   ws.getRow(1).height = 28;
 
-  const headers = ['Shop', 'Product', 'Provided', 'Sold', 'Remaining', 'Expected', 'Status'];
-  ws.columns = headers.map((h, i) => ({ header: h, key: h.toLowerCase(), width: [28,26,12,12,12,12,14][i] }));
+  const headers = ['Shop', 'Product', 'Initial Qty Given', 'Qty Sold', 'Top-Up Qty', 'Current Stock', 'Status'];
+  ws.columns = headers.map((h, i) => ({ header: h, key: h, width: [28, 26, 18, 14, 14, 16, 14][i] }));
   const hRow = ws.getRow(2);
   hRow.values = headers;
   hRow.eachCell(c => {
-    c.fill      = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A1510' } };
-    c.font      = { name: 'Calibri', bold: true, color: { argb: 'FFC9A84C' }, size: 11 };
+    c.fill      = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A1A1A' } };
+    c.font      = { name: 'Calibri', bold: true, color: { argb: 'FFE1CBBD' }, size: 11 };
     c.alignment = { horizontal: 'center', vertical: 'middle' };
-    c.border    = { bottom: { style: 'thin', color: { argb: 'FFC9A84C' } } };
   });
   ws.getRow(2).height = 22;
 
   let rowIdx = 3, hasMismatches = false;
   shops.forEach(shop => {
     PRODUCTS.forEach(product => {
-      const e        = weekData[shop]?.[product] || {};
-      const provided  = e.provided  || 0;
-      const sold      = e.sold      || 0;
-      const remaining = e.remaining || 0;
-      const expected  = provided - sold;
-      const hasData   = provided > 0 || sold > 0 || remaining > 0;
-      const bad       = hasData && remaining !== expected;
+      const raw = weekData[shop]?.[product];
+      const e   = normalizeEntry(raw);
+      const cs  = currentStock(raw);
+      const hasData   = e.initialQty > 0 || e.soldQty > 0 || e.topUp > 0;
+      const bad       = hasData && cs < 0;
       if (bad) hasMismatches = true;
 
       const row = ws.getRow(rowIdx);
-      row.values = [shop, product, provided, sold, remaining, expected,
-        !hasData ? 'Not entered' : bad ? '⚠ MISMATCH' : '✓ OK'];
+      row.values = [shop, product, e.initialQty, e.soldQty, e.topUp, hasData ? cs : '—',
+        !hasData ? 'Not entered' : bad ? '⚠ OVER-SOLD' : '✓ OK'];
       row.eachCell((c, col) => {
-        c.font      = { name: 'Calibri', size: 10, color: { argb: bad ? 'FFFFFFFF' : 'FFF0E6D0' } };
+        c.font      = { name: 'Calibri', size: 10, color: { argb: bad ? 'FFFFFFFF' : 'FF1A1A1A' } };
         c.alignment = { horizontal: col <= 2 ? 'left' : 'center', vertical: 'middle' };
         c.fill      = bad
-          ? { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFCC2222' } }
-          : { type: 'pattern', pattern: 'solid', fgColor: { argb: rowIdx % 2 === 0 ? 'FF100D0A' : 'FF0A0806' } };
+          ? { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF83A3A' } }
+          : { type: 'pattern', pattern: 'solid', fgColor: { argb: rowIdx % 2 === 0 ? 'FFF9F0EC' : 'FFFFFFFF' } };
         if (bad) c.font = { ...c.font, bold: true };
       });
       row.getCell(7).font = {
         name: 'Calibri', size: 10, bold: bad,
-        color: { argb: bad ? 'FFFFFFFF' : !hasData ? 'FF888888' : 'FF4CAF8A' }
+        color: { argb: bad ? 'FFFFFFFF' : !hasData ? 'FF888888' : 'FF00A341' }
       };
       row.height = 18;
       rowIdx++;
@@ -191,17 +277,17 @@ async function buildWorkbook(week) {
   ws.mergeCells(`A${rowIdx}:G${rowIdx}`);
   const footer = ws.getCell(`A${rowIdx}`);
   footer.value     = hasMismatches
-    ? '⚠  This report contains discrepancies. Rows highlighted in RED indicate provided − sold ≠ remaining.'
+    ? '⚠  Rows in RED indicate over-sold stock. Please review immediately.'
     : `✓  All stock counts balance correctly for week ${week}.`;
-  footer.font      = { name: 'Calibri', italic: true, size: 10, color: { argb: hasMismatches ? 'FFFF5252' : 'FF4CAF8A' } };
-  footer.fill      = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A1510' } };
+  footer.font      = { name: 'Calibri', italic: true, size: 10, color: { argb: hasMismatches ? 'FFF83A3A' : 'FF00A341' } };
+  footer.fill      = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE1CBBD' } };
   footer.alignment = { horizontal: 'center' };
 
   return wb;
 }
 
-// ── API: Download Excel report ────────────────────────────────────────────────
-app.get('/api/report/:week', async (req, res) => {
+// ── API: Download Excel ───────────────────────────────────────────────────────
+app.get('/api/report/:week', requireAuth, async (req, res) => {
   try {
     const wb = await buildWorkbook(req.params.week);
     res.setHeader('Content-Disposition', `attachment; filename="Flawless-Stock-${req.params.week}.xlsx"`);
@@ -226,34 +312,44 @@ async function sendWeeklyReport(week) {
   });
   await transporter.sendMail({
     from:    `"Flawless Inventory" <${process.env.EMAIL_USER}>`,
-    to:      'flawlessperfumesmanagement@gmail.com',
+    to:      REPORT_EMAIL,
     subject: `Flawless Perfumes — Weekly Stock Report ${week}`,
     html: `
-      <div style="font-family:sans-serif;max-width:600px;background:#0A0806;color:#F0E6D0;padding:32px;border-radius:10px">
-        <h1 style="font-family:Georgia,serif;color:#C9A84C;letter-spacing:.15em;font-size:24px;margin:0 0 4px">FLAWLESS</h1>
-        <p style="color:#8A7860;margin:0 0 24px;font-size:12px;letter-spacing:.1em">PERFUMES</p>
-        <h2 style="font-size:18px;font-weight:600;color:#F0E6D0;margin:0 0 8px">Weekly Stock Report — ${week}</h2>
-        <p style="color:#8A7860;margin:0 0 24px">${range}</p>
-        <p style="line-height:1.7">Please find the weekly inventory report attached as an Excel spreadsheet.</p>
-        <p style="line-height:1.7">Rows <strong style="color:#FF5252">highlighted in red</strong> indicate a discrepancy between provided, sold and remaining stock.</p>
-        <hr style="border:none;border-top:1px solid rgba(201,168,76,.2);margin:24px 0">
-        <p style="color:#5A4A38;font-size:12px">Sent automatically by Flawless Inventory Management</p>
+      <div style="font-family:sans-serif;max-width:640px;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e0d0c8">
+        <div style="background:#E1CBBD;padding:32px;text-align:center">
+          <img src="https://flawlessperfumes.com/cdn/shop/files/Flawless_Logo.svg?v=1711183368&width=220" style="height:60px;width:auto" alt="Flawless">
+        </div>
+        <div style="padding:32px">
+          <h2 style="font-size:20px;font-weight:700;color:#1A1A1A;margin:0 0 8px">Weekly Stock Report — ${week}</h2>
+          <p style="color:#9B6D57;margin:0 0 24px;font-size:14px">${range}</p>
+          <p style="line-height:1.7;color:#1A1A1A">Please find the weekly inventory report attached as an Excel spreadsheet.</p>
+          <p style="line-height:1.7;color:#1A1A1A">Rows <strong style="color:#F83A3A">highlighted in red</strong> indicate over-sold stock that requires immediate attention.</p>
+          <div style="margin:24px 0;padding:16px;background:#fdf7f4;border-radius:8px;border:1px solid #e0d0c8">
+            <p style="margin:0;font-size:13px;color:#5A3A2A">
+              📧 ${REPORT_EMAIL}<br>
+              💬 WhatsApp: <a href="https://wa.me/${WA_NUMBER}" style="color:#9B6D57">+33 7 58 03 37 74</a>
+            </p>
+          </div>
+        </div>
+        <div style="background:#E1CBBD;padding:16px;text-align:center">
+          <p style="margin:0;font-size:11px;color:#9B6D57">Sent automatically by Flawless Inventory Management</p>
+        </div>
       </div>`,
     attachments: [{ filename: `Flawless-Stock-${week}.xlsx`, content: buffer,
       contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }]
   });
-  await addLog({ action: 'EMAIL_SENT', week, to: 'flawlessperfumesmanagement@gmail.com' });
+  await addLog({ action: 'EMAIL_SENT', week, to: REPORT_EMAIL });
 }
 
-app.post('/api/send-report', async (req, res) => {
+app.post('/api/send-report', requireAuth, async (req, res) => {
   const week = req.body.week || getWeekId();
   try {
     await sendWeeklyReport(week);
-    res.json({ success: true, message: `Report for ${week} sent to flawlessperfumesmanagement@gmail.com` });
+    res.json({ success: true, message: `Report for ${week} sent to ${REPORT_EMAIL}` });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// ── Vercel Cron endpoint (called every Sunday 9 AM by vercel.json) ────────────
+// ── Vercel Cron (every Sunday 9 AM) ──────────────────────────────────────────
 app.get('/api/cron', async (req, res) => {
   const secret = process.env.CRON_SECRET;
   if (secret && req.headers.authorization !== `Bearer ${secret}`) {

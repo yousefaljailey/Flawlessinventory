@@ -65,12 +65,52 @@ function requireAuth(req, res, next) {
   next();
 }
 
+// Brute-force protection: track failed attempts per IP
+const loginAttempts = new Map();
+const MAX_ATTEMPTS  = 5;
+const LOCKOUT_MS    = 15 * 60 * 1000; // 15 minutes
+
+function checkRateLimit(ip) {
+  const now  = Date.now();
+  const rec  = loginAttempts.get(ip) || { count: 0, first: now, locked: 0 };
+  if (rec.locked && now < rec.locked) {
+    const secsLeft = Math.ceil((rec.locked - now) / 1000);
+    return { blocked: true, secsLeft };
+  }
+  if (now - rec.first > LOCKOUT_MS) { rec.count = 0; rec.first = now; rec.locked = 0; }
+  loginAttempts.set(ip, rec);
+  return { blocked: false, rec };
+}
+
+function recordFailure(ip) {
+  const rec = loginAttempts.get(ip) || { count: 0, first: Date.now(), locked: 0 };
+  rec.count++;
+  if (rec.count >= MAX_ATTEMPTS) rec.locked = Date.now() + LOCKOUT_MS;
+  loginAttempts.set(ip, rec);
+}
+
+function clearAttempts(ip) { loginAttempts.delete(ip); }
+
+// Clean up old entries every 30 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, rec] of loginAttempts) {
+    if (now - rec.first > LOCKOUT_MS * 2) loginAttempts.delete(ip);
+  }
+}, 30 * 60 * 1000);
+
 app.post('/api/auth', (req, res) => {
+  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket.remoteAddress || 'unknown';
+  const { blocked, secsLeft } = checkRateLimit(ip);
+  if (blocked) return res.status(429).json({ error: `Too many attempts. Try again in ${secsLeft}s.` });
+
   const { username, password } = req.body || {};
   if (!username || !password) return res.status(400).json({ error: 'Missing credentials' });
   if (USERS[username.toLowerCase()] !== password) {
+    recordFailure(ip);
     return res.status(401).json({ error: 'Invalid username or password' });
   }
+  clearAttempts(ip);
   res.json({ success: true, token: makeToken(username.toLowerCase()) });
 });
 
@@ -113,6 +153,35 @@ function normalizeEntry(e) {
 function currentStock(e) {
   const n = normalizeEntry(e);
   return n.initialQty + n.topUp - n.soldQty;
+}
+
+// ── WhatsApp (CallMeBot) ──────────────────────────────────────────────────────
+function buildWAMessage(shop, week, products) {
+  const range = weekRange(week);
+  const lines = [];
+  for (const [product, vals] of Object.entries(products)) {
+    const n  = normalizeEntry(vals);
+    const cs = n.initialQty + n.topUp - n.soldQty;
+    if (!n.initialQty && !n.soldQty && !n.topUp) continue;
+    const parts = [];
+    if (n.initialQty) parts.push(`Init: ${n.initialQty}`);
+    if (n.soldQty)    parts.push(`Sold: ${n.soldQty}`);
+    if (n.topUp)      parts.push(`Top-Up: +${n.topUp}`);
+    const statusIcon = cs < 0 ? '⚠️' : n.topUp > 0 ? '📦' : cs > 0 ? '📌' : '✅';
+    const statusText = cs < 0 ? `${cs} OVER-SOLD` : cs === 0 ? 'Cleared' : `${cs} left`;
+    lines.push(`${statusIcon} *${product}*\n   ${parts.join(' | ')} → ${statusText}`);
+  }
+  if (!lines.length) return null;
+  const time = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  return `🌸 *Flawless Inventory Update*\n\n📍 *${shop}*\n📅 ${week}  ·  ${range}\n\n${lines.join('\n\n')}\n\n_Saved at ${time}_`;
+}
+
+async function sendWA(message) {
+  const key = process.env.WA_API_KEY;
+  if (!key) return;
+  try {
+    await fetch(`https://api.callmebot.com/whatsapp.php?phone=${WA_NUMBER}&text=${encodeURIComponent(message)}&apikey=${key}`);
+  } catch { /* silent */ }
 }
 
 async function addLog(entry) {
@@ -193,7 +262,10 @@ app.post('/api/stock/bulk', requireAuth, async (req, res) => {
     }
     await storage.set('stock', stock);
     await addLog({ action: 'STOCK_SAVE', shop, week, products: Object.keys(products).length });
-    res.json({ success: true });
+    const waMsg = buildWAMessage(shop, week, products);
+    if (waMsg) sendWA(waMsg).catch(() => {});
+    const waUrl = waMsg ? `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(waMsg)}` : null;
+    res.json({ success: true, waUrl });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 

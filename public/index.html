@@ -693,22 +693,30 @@ document.getElementById('password').addEventListener('keydown', e => { if (e.key
 document.getElementById('username').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('password').focus(); });
 
 // ── Boot (fix: optimistic auth — show loader immediately if token exists) ──
+// Decode token client-side — no server round-trip needed on refresh
+function decodeToken(token) {
+  if (!token) return null;
+  try {
+    const decoded = atob(token);
+    const parts   = decoded.split(':');
+    if (parts.length < 3) return null;
+    const ts  = Number(parts[parts.length - 2]);
+    const age = Date.now() - ts;
+    if (isNaN(ts) || age < 0 || age > 7 * 24 * 60 * 60 * 1000) return null;
+    return true; // valid shape and not expired
+  } catch { return null; }
+}
+
 (async function boot() {
   if (!authToken) return; // no token → stay on login
-  showLoader(); // immediately show loader, NOT login screen
-  try {
-    const res = await fetch('/api/auth/verify', {
-      headers: { Authorization: `Bearer ${authToken}` }
-    });
-    if (!res.ok) throw new Error('verify failed');
-    const { valid } = await res.json();
-    if (!valid) throw new Error('token invalid');
-    await startApp();
-  } catch {
-    authToken = '';
-    localStorage.removeItem('flawless_token');
-    showLogin();
+  if (!decodeToken(authToken)) {
+    // Token missing or obviously expired — clean up and show login
+    authToken = ''; localStorage.removeItem('flawless_token'); return;
   }
+  // Token looks valid — skip verify round-trip, go straight to app
+  // Any real 401 from the API will call logout() automatically
+  showLoader();
+  await startApp();
 })();
 
 // ── API ─────────────────────────────────────────────────────────────────────

@@ -1,0 +1,56 @@
+{
+  "2026-W17": {
+    "Dubai Mall": {
+      "Monte-Carlo 30ml": {
+        "provided": 10,
+        "sold": 7,
+        "remaining": 3,
+        "savedAt": "2026-04-24T19:21:46.701Z"
+      },
+      "Discovery Set": {
+        "provided": 5,
+        "sold": 5,
+        "remaining": 1,
+        "savedAt": "2026-04-24T19:21:46.701Z"
+      }
+    },
+    "Mall of the Emirates": {
+      "Monte-Carlo 30ml": {
+        "provided": 15,
+        "sold": 8,
+        "remaining": 7,
+        "savedAt": "2026-04-24T19:26:28.556Z"
+      },
+      "Monte-Carlo 100ml": {
+        "provided": 10,
+        "sold": 4,
+        "remaining": 4,
+        "savedAt": "2026-04-24T19:26:28.556Z"
+      },
+      "Summer in Paris 30ml": {
+        "provided": 8,
+        "sold": 3,
+        "remaining": 9,
+        "savedAt": "2026-04-24T19:26:28.556Z"
+      },
+      "Bedouin 100ml": {
+        "provided": 12,
+        "sold": 6,
+        "remaining": 6,
+        "savedAt": "2026-04-24T19:26:28.556Z"
+      },
+      "Rub Al Khali 30ml": {
+        "provided": 20,
+        "sold": 15,
+        "remaining": 5,
+        "savedAt": "2026-04-24T19:26:28.556Z"
+      },
+      "Discovery Set": {
+        "provided": 5,
+        "sold": 2,
+        "remaining": 3,
+        "savedAt": "2026-04-24T19:26:28.556Z"
+      }
+    }
+  }
+}

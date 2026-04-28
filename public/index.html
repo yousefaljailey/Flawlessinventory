@@ -645,29 +645,16 @@ function showLogin() { document.getElementById('login-screen').style.display = '
 function showLoader(){ document.getElementById('loader').style.display = 'flex'; document.getElementById('login-screen').style.display = 'none'; document.getElementById('app').style.display = 'none'; }
 
 async function login() {
-  const username = document.getElementById('username').value.trim();
-  const password = document.getElementById('password').value;
-  const btn      = document.getElementById('login-btn');
+  const btn = document.getElementById('login-btn');
   document.getElementById('login-error').style.display = 'none';
-  if (!username || !password) { showLoginError('Please enter your username and password.'); return; }
-  btn.disabled = true; btn.textContent = 'Signing in…';
+  btn.disabled = true; btn.textContent = 'Opening…';
   try {
-    const res  = await fetch('/api/auth', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ username, password }) });
-    const data = await res.json();
-    if (res.status === 429) { showLoginError(data.error || 'Too many attempts. Please wait.'); return; }
-    if (!res.ok || !data.success) {
-      failCount++;
-      const left = Math.max(0, 5 - failCount);
-      showLoginError((data.error || 'Invalid credentials') + (left > 0 && left < 5 ? ` — ${left} attempt${left===1?'':'s'} left` : ''));
-      return;
-    }
-    failCount = 0;
-    authToken = data.token;
-    localStorage.setItem('flawless_token', authToken);
-    showLoader();
     await startApp();
-  } catch { showLoginError('Connection error. Please try again.'); }
-  finally { btn.disabled = false; btn.textContent = 'Sign In'; }
+  } catch (e) {
+    showLoginError('Failed to open site.');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Sign In';
+  }
 }
 
 function showLoginError(msg) {
@@ -707,18 +694,6 @@ function decodeToken(token) {
   } catch { return null; }
 }
 
-(async function boot() {
-  if (!authToken) return; // no token → stay on login
-  if (!decodeToken(authToken)) {
-    // Token missing or obviously expired — clean up and show login
-    authToken = ''; localStorage.removeItem('flawless_token'); return;
-  }
-  // Token looks valid — skip verify round-trip, go straight to app
-  // Any real 401 from the API will call logout() automatically
-  showLoader();
-  await startApp();
-})();
-
 // ── API ─────────────────────────────────────────────────────────────────────
 async function api(method, url, body) {
   const opts = { method, headers:{'Content-Type':'application/json','Authorization':`Bearer ${authToken}`} };
@@ -733,6 +708,14 @@ const apiDel  = u    => api('DELETE', u);
 
 // ── State ───────────────────────────────────────────────────────────────────
 const S = { tab:'shops', week:'', shops:[], products:[], stock:{}, logs:[], expanded:new Set() };
+
+(async function boot() {
+  if (authToken && decodeToken(authToken)) {
+    await startApp();
+  } else {
+    showLogin();
+  }
+})();
 
 // ── Week utils ──────────────────────────────────────────────────────────────
 function getCurrentWeekId() {
@@ -777,8 +760,10 @@ async function startApp() {
     await loadLogs();
     showApp();
     renderAll();
+    setTab('inventory');
   } catch(e) {
-    if (e.message !== 'Session expired') { toast('Failed to load: ' + e.message, 'err'); showLogin(); }
+    toast('Failed to load: ' + e.message, 'err');
+    showLogin();
   }
 }
 async function loadStock() { S.stock = await apiGet(`/api/stock/${S.week}`); }

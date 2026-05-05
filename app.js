@@ -1,39 +1,44 @@
-const express   = require('express');
+const express    = require('express');
 const nodemailer = require('nodemailer');
-const ExcelJS   = require('exceljs');
-const crypto    = require('crypto');
-const path      = require('path');
-const storage   = require('./lib/storage');
+const ExcelJS    = require('exceljs');
+const crypto     = require('crypto');
+const path       = require('path');
+const storage    = require('./lib/storage');
 
 const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ── Constants ─────────────────────────────────────────────────────────────────
+// ── Products ──────────────────────────────────────────────────────────────────
 const PRODUCTS = [
-  'Monte-Carlo 30ml',
-  'Monte-Carlo 100ml',
-  'Summer in Paris 30ml',
-  'Bedouin 100ml',
-  'Rub Al Khali 30ml',
-  'Discovery Set'
+  { name: 'Monte-Carlo 30ml',      category: '30ml'          },
+  { name: 'Monte-Carlo 100ml',     category: '100ml'         },
+  { name: 'Summer in Paris 30ml',  category: '30ml'          },
+  { name: 'Summer in Paris 100ml', category: '100ml'         },
+  { name: 'Bedouin 30ml',          category: '30ml'          },
+  { name: 'Bedouin 100ml',         category: '100ml'         },
+  { name: 'Rub Al Khali 30ml',     category: '30ml'          },
+  { name: 'Rub Al Khali 100ml',    category: '100ml'         },
+  { name: 'Discovery Set',         category: 'Discovery Set' },
 ];
+const PRODUCT_NAMES = PRODUCTS.map(p => p.name);
 
 const DEFAULT_SHOPS = [
   "Ardi's Barbershop",
   "Family's Barber",
-  "Hair Essence",
-  "Romana Paulen",
-  "Pilateez",
-  "Elevated Studio"
+  "Mall of the Emirates",
+  "Dubai Mall",
+  "City Centre Mirdif",
+  "Elevated Studio",
 ];
 
-const WA_NUMBER = '33758033774';
-const REPORT_EMAIL = 'flawlessperfumesmanagement@gmail.com';
+const LOW_STOCK_THRESHOLD = 3;
+const WA_NUMBER           = '33758033774';
+const REPORT_EMAIL        = 'flawlessperfumesmanagement@gmail.com';
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 const AUTH_SECRET = process.env.AUTH_SECRET || 'fl4wl3ss-inv-2026-secret';
-const USERS = { flawless: 'Flawless123' };
+const USERS       = { flawless: 'Flawless123' };
 
 function makeToken(username) {
   const data = `${username}:${Date.now()}`;
@@ -47,12 +52,12 @@ function verifyToken(token) {
     const decoded = Buffer.from(token, 'base64').toString();
     const parts   = decoded.split(':');
     if (parts.length < 3) return null;
-    const sig  = parts.pop();
-    const data = parts.join(':');
+    const sig      = parts.pop();
+    const data     = parts.join(':');
     const expected = crypto.createHmac('sha256', AUTH_SECRET).update(data).digest('hex');
     if (sig !== expected) return null;
     const [username, ts] = parts;
-    if (Date.now() - Number(ts) > 7 * 24 * 60 * 60 * 1000) return null; // 7 days
+    if (Date.now() - Number(ts) > 7 * 24 * 60 * 60 * 1000) return null;
     return username;
   } catch { return null; }
 }
@@ -65,33 +70,28 @@ function requireAuth(req, res, next) {
   next();
 }
 
-// Brute-force protection: track failed attempts per IP
 const loginAttempts = new Map();
 const MAX_ATTEMPTS  = 5;
-const LOCKOUT_MS    = 15 * 60 * 1000; // 15 minutes
+const LOCKOUT_MS    = 15 * 60 * 1000;
 
 function checkRateLimit(ip) {
-  const now  = Date.now();
-  const rec  = loginAttempts.get(ip) || { count: 0, first: now, locked: 0 };
+  const now = Date.now();
+  const rec = loginAttempts.get(ip) || { count: 0, first: now, locked: 0 };
   if (rec.locked && now < rec.locked) {
-    const secsLeft = Math.ceil((rec.locked - now) / 1000);
-    return { blocked: true, secsLeft };
+    return { blocked: true, secsLeft: Math.ceil((rec.locked - now) / 1000) };
   }
   if (now - rec.first > LOCKOUT_MS) { rec.count = 0; rec.first = now; rec.locked = 0; }
   loginAttempts.set(ip, rec);
   return { blocked: false, rec };
 }
-
 function recordFailure(ip) {
   const rec = loginAttempts.get(ip) || { count: 0, first: Date.now(), locked: 0 };
   rec.count++;
   if (rec.count >= MAX_ATTEMPTS) rec.locked = Date.now() + LOCKOUT_MS;
   loginAttempts.set(ip, rec);
 }
-
 function clearAttempts(ip) { loginAttempts.delete(ip); }
 
-// Clean up old entries every 30 minutes
 setInterval(() => {
   const now = Date.now();
   for (const [ip, rec] of loginAttempts) {
@@ -103,7 +103,6 @@ app.post('/api/auth', (req, res) => {
   const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket.remoteAddress || 'unknown';
   const { blocked, secsLeft } = checkRateLimit(ip);
   if (blocked) return res.status(429).json({ error: `Too many attempts. Try again in ${secsLeft}s.` });
-
   const { username, password } = req.body || {};
   if (!username || !password) return res.status(400).json({ error: 'Missing credentials' });
   if (USERS[username.toLowerCase()] !== password) {
@@ -142,10 +141,9 @@ function weekRange(weekId) {
   return `${fmt(start)} – ${fmt(end)}`;
 }
 
-// ── Normalize stock entry (handles old + new format) ─────────────────────────
+// ── Stock helpers ─────────────────────────────────────────────────────────────
 function normalizeEntry(e) {
   if (!e) return { initialQty: 0, soldQty: 0, topUp: 0 };
-  // Old format migration: provided → initialQty, sold → soldQty
   if ('provided' in e) return { initialQty: e.provided || 0, soldQty: e.sold || 0, topUp: e.topUp || 0 };
   return { initialQty: e.initialQty || 0, soldQty: e.soldQty || 0, topUp: e.topUp || 0 };
 }
@@ -167,9 +165,9 @@ function buildWAMessage(shop, week, products) {
     if (n.initialQty) parts.push(`Init: ${n.initialQty}`);
     if (n.soldQty)    parts.push(`Sold: ${n.soldQty}`);
     if (n.topUp)      parts.push(`Top-Up: +${n.topUp}`);
-    const statusIcon = cs < 0 ? '⚠️' : n.topUp > 0 ? '📦' : cs > 0 ? '📌' : '✅';
-    const statusText = cs < 0 ? `${cs} OVER-SOLD` : cs === 0 ? 'Cleared' : `${cs} left`;
-    lines.push(`${statusIcon} *${product}*\n   ${parts.join(' | ')} → ${statusText}`);
+    const icon = cs < 0 ? '⚠️' : cs <= LOW_STOCK_THRESHOLD ? '🔴' : '✅';
+    const stat = cs < 0 ? `${cs} OVER-SOLD` : cs === 0 ? 'Cleared' : `${cs} left`;
+    lines.push(`${icon} *${product}*\n   ${parts.join(' | ')} → ${stat}`);
   }
   if (!lines.length) return null;
   const time = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
@@ -194,7 +192,6 @@ async function addLog(entry) {
 app.get('/api/shops', requireAuth, async (_, res) => {
   try {
     let shops = await storage.get('shops');
-    // Seed defaults on first run
     if (!shops || shops.length === 0) {
       const initialized = await storage.get('shops_initialized');
       if (!initialized) {
@@ -231,6 +228,24 @@ app.delete('/api/shops/:name', requireAuth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ── API: Contacts ─────────────────────────────────────────────────────────────
+app.get('/api/contacts', requireAuth, async (_, res) => {
+  try {
+    res.json(await storage.get('contacts') || {});
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/contacts', requireAuth, async (req, res) => {
+  try {
+    const { shop, contact, email } = req.body || {};
+    if (!shop) return res.status(400).json({ error: 'Shop required' });
+    const contacts = (await storage.get('contacts')) || {};
+    contacts[shop] = { contact: contact || '', email: email || '', updatedAt: new Date().toISOString() };
+    await storage.set('contacts', contacts);
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // ── API: Products ─────────────────────────────────────────────────────────────
 app.get('/api/products', requireAuth, (_, res) => res.json(PRODUCTS));
 
@@ -246,18 +261,16 @@ app.post('/api/stock/bulk', requireAuth, async (req, res) => {
   try {
     const { shop, week, products } = req.body;
     if (!shop || !week || !products) return res.status(400).json({ error: 'Missing fields' });
-
     const stock = await storage.get('stock');
     if (!stock[week])       stock[week] = {};
     if (!stock[week][shop]) stock[week][shop] = {};
-
     const saved = new Date().toISOString();
     for (const [product, vals] of Object.entries(products)) {
       stock[week][shop][product] = {
         initialQty: Math.max(0, Number(vals.initialQty) || 0),
         soldQty:    Math.max(0, Number(vals.soldQty)    || 0),
         topUp:      Math.max(0, Number(vals.topUp)      || 0),
-        savedAt: saved
+        savedAt: saved,
       };
     }
     await storage.set('stock', stock);
@@ -266,6 +279,65 @@ app.post('/api/stock/bulk', requireAuth, async (req, res) => {
     if (waMsg) sendWA(waMsg).catch(() => {});
     const waUrl = waMsg ? `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(waMsg)}` : null;
     res.json({ success: true, waUrl });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── API: Dashboard ────────────────────────────────────────────────────────────
+app.get('/api/dashboard/:week', requireAuth, async (req, res) => {
+  try {
+    const { week } = req.params;
+    const [stock, shops] = await Promise.all([storage.get('stock'), storage.get('shops')]);
+    const weekData = stock[week] || {};
+
+    let totalDelivered = 0, totalSold = 0, totalRemaining = 0;
+    const lowStock       = [];
+    const overSold       = [];
+    const productSummary = {};
+    const shopStatuses   = [];
+
+    for (const shop of shops) {
+      const shopData = weekData[shop] || {};
+      let hasAny = false, shopSold = 0, shopRemain = 0, shopOk = true, lastSaved = null;
+
+      for (const p of PRODUCTS) {
+        const raw  = shopData[p.name];
+        const norm = normalizeEntry(raw);
+        const rem  = currentStock(raw);
+        const hd   = norm.initialQty > 0 || norm.soldQty > 0 || norm.topUp > 0;
+        if (hd) {
+          hasAny = true;
+          totalDelivered += norm.initialQty + norm.topUp;
+          totalSold      += norm.soldQty;
+          shopSold       += norm.soldQty;
+          shopRemain     += rem;
+          if (!productSummary[p.name]) productSummary[p.name] = { delivered: 0, sold: 0, remaining: 0, category: p.category };
+          productSummary[p.name].delivered += norm.initialQty + norm.topUp;
+          productSummary[p.name].sold      += norm.soldQty;
+          productSummary[p.name].remaining += rem;
+          if (rem < 0)                         { overSold.push({ shop, product: p.name, remaining: rem }); shopOk = false; }
+          else if (rem <= LOW_STOCK_THRESHOLD)  { lowStock.push({ shop, product: p.name, remaining: rem }); shopOk = false; }
+          if (!lastSaved || (raw?.savedAt && raw.savedAt > lastSaved)) lastSaved = raw?.savedAt;
+        }
+      }
+      totalRemaining += shopRemain;
+      shopStatuses.push({ shop, hasData: hasAny, sold: shopSold, remaining: shopRemain, ok: shopOk, lastSaved });
+    }
+
+    res.json({
+      week,
+      range: weekRange(week),
+      totalShops: shops.length,
+      shopsReporting: shopStatuses.filter(s => s.hasData).length,
+      totalDelivered,
+      totalSold,
+      totalRemaining,
+      lowStockCount: lowStock.length,
+      overSoldCount: overSold.length,
+      lowStock,
+      overSold,
+      productSummary,
+      shopStatuses,
+    });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -278,13 +350,13 @@ app.get('/api/logs', requireAuth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// ── API: Week info ────────────────────────────────────────────────────────────
+// ── API: Week ─────────────────────────────────────────────────────────────────
 app.get('/api/week', (_, res) => {
   const week = getWeekId();
   res.json({ week, range: weekRange(week) });
 });
 
-// ── Report: build Excel workbook ──────────────────────────────────────────────
+// ── Report: Excel ─────────────────────────────────────────────────────────────
 async function buildWorkbook(week) {
   const [stock, shops] = await Promise.all([storage.get('stock'), storage.get('shops')]);
   const weekData = stock[week] || {};
@@ -295,8 +367,7 @@ async function buildWorkbook(week) {
 
   const ws = wb.addWorksheet(`Week ${week}`, { pageSetup: { fitToPage: true, fitToWidth: 1 } });
 
-  // Title
-  ws.mergeCells('A1:G1');
+  ws.mergeCells('A1:H1');
   const title = ws.getCell('A1');
   title.value     = `FLAWLESS PERFUMES — Stock Report ${week}  (${weekRange(week)})`;
   title.font      = { name: 'Calibri', size: 14, bold: true, color: { argb: 'FF1A1A1A' } };
@@ -304,8 +375,8 @@ async function buildWorkbook(week) {
   title.alignment = { horizontal: 'center', vertical: 'middle' };
   ws.getRow(1).height = 28;
 
-  const headers = ['Shop', 'Product', 'Initial Qty Given', 'Qty Sold', 'Top-Up Qty', 'Current Stock', 'Status'];
-  ws.columns = headers.map((h, i) => ({ header: h, key: h, width: [28, 26, 18, 14, 14, 16, 14][i] }));
+  const headers = ['Shop', 'Product', 'Category', 'Initial Qty', 'Qty Sold', 'Top-Up', 'Current Stock', 'Status'];
+  ws.columns = headers.map((h, i) => ({ header: h, key: h, width: [28, 26, 16, 14, 14, 14, 16, 14][i] }));
   const hRow = ws.getRow(2);
   hRow.values = headers;
   hRow.eachCell(c => {
@@ -317,28 +388,32 @@ async function buildWorkbook(week) {
 
   let rowIdx = 3, hasMismatches = false;
   shops.forEach(shop => {
-    PRODUCTS.forEach(product => {
-      const raw = weekData[shop]?.[product];
-      const e   = normalizeEntry(raw);
-      const cs  = currentStock(raw);
-      const hasData   = e.initialQty > 0 || e.soldQty > 0 || e.topUp > 0;
-      const bad       = hasData && cs < 0;
+    PRODUCT_NAMES.forEach(product => {
+      const pObj = PRODUCTS.find(p => p.name === product);
+      const raw  = weekData[shop]?.[product];
+      const e    = normalizeEntry(raw);
+      const cs   = currentStock(raw);
+      const hasD = e.initialQty > 0 || e.soldQty > 0 || e.topUp > 0;
+      const bad  = hasD && cs < 0;
+      const low  = hasD && !bad && cs <= LOW_STOCK_THRESHOLD;
       if (bad) hasMismatches = true;
 
       const row = ws.getRow(rowIdx);
-      row.values = [shop, product, e.initialQty, e.soldQty, e.topUp, hasData ? cs : '—',
-        !hasData ? 'Not entered' : bad ? '⚠ OVER-SOLD' : '✓ OK'];
+      row.values = [shop, product, pObj?.category || '', e.initialQty, e.soldQty, e.topUp,
+        hasD ? cs : '—', !hasD ? 'Not entered' : bad ? '⚠ OVER-SOLD' : low ? '⚠ LOW STOCK' : '✓ OK'];
       row.eachCell((c, col) => {
         c.font      = { name: 'Calibri', size: 10, color: { argb: bad ? 'FFFFFFFF' : 'FF1A1A1A' } };
-        c.alignment = { horizontal: col <= 2 ? 'left' : 'center', vertical: 'middle' };
-        c.fill      = bad
+        c.alignment = { horizontal: col <= 3 ? 'left' : 'center', vertical: 'middle' };
+        c.fill = bad
           ? { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF83A3A' } }
-          : { type: 'pattern', pattern: 'solid', fgColor: { argb: rowIdx % 2 === 0 ? 'FFF9F0EC' : 'FFFFFFFF' } };
+          : low
+            ? { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFF3CD' } }
+            : { type: 'pattern', pattern: 'solid', fgColor: { argb: rowIdx % 2 === 0 ? 'FFF9F0EC' : 'FFFFFFFF' } };
         if (bad) c.font = { ...c.font, bold: true };
       });
-      row.getCell(7).font = {
-        name: 'Calibri', size: 10, bold: bad,
-        color: { argb: bad ? 'FFFFFFFF' : !hasData ? 'FF888888' : 'FF00A341' }
+      row.getCell(8).font = {
+        name: 'Calibri', size: 10, bold: bad || low,
+        color: { argb: bad ? 'FFFFFFFF' : low ? 'FFCC8800' : !hasD ? 'FF888888' : 'FF00A341' },
       };
       row.height = 18;
       rowIdx++;
@@ -346,7 +421,7 @@ async function buildWorkbook(week) {
   });
 
   rowIdx++;
-  ws.mergeCells(`A${rowIdx}:G${rowIdx}`);
+  ws.mergeCells(`A${rowIdx}:H${rowIdx}`);
   const footer = ws.getCell(`A${rowIdx}`);
   footer.value     = hasMismatches
     ? '⚠  Rows in RED indicate over-sold stock. Please review immediately.'
@@ -358,7 +433,6 @@ async function buildWorkbook(week) {
   return wb;
 }
 
-// ── API: Download Excel ───────────────────────────────────────────────────────
 app.get('/api/report/:week', requireAuth, async (req, res) => {
   try {
     const wb = await buildWorkbook(req.params.week);
@@ -372,7 +446,7 @@ app.get('/api/report/:week', requireAuth, async (req, res) => {
 // ── Email ─────────────────────────────────────────────────────────────────────
 async function sendWeeklyReport(week) {
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    throw new Error('EMAIL_USER / EMAIL_PASS not set in environment variables.');
+    throw new Error('EMAIL_USER / EMAIL_PASS not configured.');
   }
   const wb     = await buildWorkbook(week);
   const buffer = await wb.xlsx.writeBuffer();
@@ -380,8 +454,9 @@ async function sendWeeklyReport(week) {
 
   const transporter = nodemailer.createTransport({
     service: 'gmail',
-    auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
+    auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
   });
+
   await transporter.sendMail({
     from:    `"Flawless Inventory" <${process.env.EMAIL_USER}>`,
     to:      REPORT_EMAIL,
@@ -395,20 +470,17 @@ async function sendWeeklyReport(week) {
           <h2 style="font-size:20px;font-weight:700;color:#1A1A1A;margin:0 0 8px">Weekly Stock Report — ${week}</h2>
           <p style="color:#9B6D57;margin:0 0 24px;font-size:14px">${range}</p>
           <p style="line-height:1.7;color:#1A1A1A">Please find the weekly inventory report attached as an Excel spreadsheet.</p>
-          <p style="line-height:1.7;color:#1A1A1A">Rows <strong style="color:#F83A3A">highlighted in red</strong> indicate over-sold stock that requires immediate attention.</p>
-          <div style="margin:24px 0;padding:16px;background:#fdf7f4;border-radius:8px;border:1px solid #e0d0c8">
-            <p style="margin:0;font-size:13px;color:#5A3A2A">
-              📧 ${REPORT_EMAIL}<br>
-              💬 WhatsApp: <a href="https://wa.me/${WA_NUMBER}" style="color:#9B6D57">+33 7 58 03 37 74</a>
-            </p>
-          </div>
+          <p style="line-height:1.7;color:#1A1A1A">Rows <strong style="color:#F83A3A">highlighted in red</strong> are over-sold. Rows in <strong style="color:#CC8800">yellow</strong> are low stock (≤${LOW_STOCK_THRESHOLD} units).</p>
         </div>
         <div style="background:#E1CBBD;padding:16px;text-align:center">
-          <p style="margin:0;font-size:11px;color:#9B6D57">Sent automatically by Flawless Inventory Management</p>
+          <p style="margin:0;font-size:11px;color:#9B6D57">Sent automatically by Flawless Inventory Management · <a href="https://wa.me/${WA_NUMBER}" style="color:#9B6D57">WhatsApp</a></p>
         </div>
       </div>`,
-    attachments: [{ filename: `Flawless-Stock-${week}.xlsx`, content: buffer,
-      contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }]
+    attachments: [{
+      filename: `Flawless-Stock-${week}.xlsx`,
+      content:  buffer,
+      contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    }],
   });
   await addLog({ action: 'EMAIL_SENT', week, to: REPORT_EMAIL });
 }
@@ -421,7 +493,7 @@ app.post('/api/send-report', requireAuth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// ── Vercel Cron (every Sunday 9 AM) ──────────────────────────────────────────
+// ── Vercel Cron ───────────────────────────────────────────────────────────────
 app.get('/api/cron', async (req, res) => {
   const secret = process.env.CRON_SECRET;
   if (secret && req.headers.authorization !== `Bearer ${secret}`) {

@@ -5,1070 +5,950 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Flawless — Inventory</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Barlow:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Barlow:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#0C0806;--s1:#160D07;--s2:#1E1208;--s3:#281A0A;--s4:#301E0C;
-  --gold:#C98B3A;--gold-l:#E4A855;--gold-d:#9B6A28;--gold-dim:rgba(201,139,58,.10);--gold-dim2:rgba(201,139,58,.05);
-  --cream:#F0DEC8;--cream-d:#C4A882;--muted:#8A6A4A;--dim:#5A4030;
-  --border:rgba(201,139,58,.12);--border-h:rgba(201,139,58,.28);
-  --red:#E05030;--red-bg:rgba(224,80,48,.10);
-  --amber:#CC8800;--amber-bg:rgba(204,136,0,.10);
-  --green:#5AAE7A;--green-bg:rgba(90,174,122,.10);
-  --blue:#4A8FD4;--blue-bg:rgba(74,143,212,.10);
-  --sidebar:228px;--font:'Barlow',sans-serif;--font-d:'Cormorant Garamond',serif;--r:14px;--r-sm:9px;
+  --bg:#080503;--s1:#110A04;--s2:#1A1008;--s3:#22150A;--s4:#2C1C0C;
+  --gold:#C98B3A;--gold-l:#E4A855;--gold-d:#9B6A28;--gold-dim:rgba(201,139,58,.12);--gold-glow:rgba(201,139,58,.20);
+  --cream:#F0DEC8;--cream-d:#C4A882;--muted:#7A5E3A;--dim:#4A3018;
+  --border:rgba(201,139,58,.13);--border-h:rgba(201,139,58,.32);
+  --red:#E05030;--red-bg:rgba(224,80,48,.12);
+  --amber:#D4882A;--amber-bg:rgba(212,136,42,.12);
+  --green:#4EA86A;--green-bg:rgba(78,168,106,.12);
+  --blue:#4A8FD4;--blue-bg:rgba(74,143,212,.12);
+  --sidebar:236px;
+  --font:'Barlow',sans-serif;--font-d:'Cormorant Garamond',serif;
+  --r:14px;--r-sm:9px;--r-xs:6px;
 }
 html,body{min-height:100vh;background:var(--bg);color:var(--cream);font-family:var(--font);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
 ::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--s3);border-radius:3px}
+input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 
-/* ─ LOGIN ───────────────────────────────────────────────────────────────── */
-#login-screen{position:fixed;inset:0;background:var(--bg);background-image:radial-gradient(ellipse 80% 50% at 50% -10%,rgba(201,139,58,.10) 0%,transparent 60%);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;padding:24px}
-.login-logo{height:72px;width:auto;filter:brightness(0) invert(1);margin-bottom:40px}
-.login-card{background:var(--s1);border:1px solid var(--border-h);border-radius:20px;padding:40px 36px 36px;width:100%;max-width:380px;box-shadow:0 24px 80px rgba(0,0,0,.6),0 0 0 1px rgba(201,139,58,.05)}
-.login-eyebrow{font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
-.login-title{font-family:var(--font-d);font-size:28px;font-weight:600;color:var(--cream);margin-bottom:4px;line-height:1.2}
-.login-sub{font-size:13px;color:var(--muted);margin-bottom:32px}
-.form-group{margin-bottom:16px}
-.form-label{display:block;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
-.form-input{width:100%;padding:13px 16px;background:var(--s2);border:1.5px solid var(--border);border-radius:var(--r-sm);color:var(--cream);font-family:var(--font);font-size:15px;transition:border-color .18s;-webkit-appearance:none}
+/* ─ LOGIN ─────────────────────────────────────────────────────────────────── */
+#login-screen{
+  position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;
+  background:var(--bg);
+  background-image:
+    radial-gradient(ellipse 90% 70% at 15% 85%,rgba(180,70,20,.18) 0%,transparent 55%),
+    radial-gradient(ellipse 80% 60% at 90% 10%,rgba(201,139,58,.14) 0%,transparent 55%),
+    radial-gradient(ellipse 50% 40% at 50% 50%,rgba(12,8,4,0) 0%,transparent 100%);
+}
+.login-wrap{width:100%;max-width:400px;display:flex;flex-direction:column;align-items:center}
+.login-logo-img{height:68px;width:auto;margin-bottom:36px;filter:brightness(0) invert(1)}
+.login-logo-txt{display:none;font-family:var(--font-d);font-size:34px;font-weight:600;color:var(--cream);letter-spacing:.12em;margin-bottom:36px}
+.login-card{
+  width:100%;background:var(--s1);
+  border:1px solid var(--border-h);border-radius:20px;padding:40px 36px 36px;
+  box-shadow:0 32px 80px rgba(0,0,0,.7),0 0 0 1px rgba(201,139,58,.06),inset 0 1px 0 rgba(201,139,58,.08);
+}
+.login-eyebrow{font-size:9px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
+.login-title{font-family:var(--font-d);font-size:26px;font-weight:600;color:var(--cream);margin-bottom:4px;line-height:1.2}
+.login-sub{font-size:13px;color:var(--muted);margin-bottom:28px}
+.form-group{margin-bottom:14px}
+.form-label{display:block;font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
+.form-input{width:100%;padding:13px 15px;background:var(--s2);border:1.5px solid var(--border);border-radius:var(--r-sm);color:var(--cream);font-family:var(--font);font-size:15px;transition:border-color .18s,background .18s;-webkit-appearance:none}
 .form-input:focus{outline:none;border-color:var(--gold);background:var(--s3)}
 .form-input::placeholder{color:var(--dim)}
-.login-error{font-size:13px;color:var(--red);margin-bottom:14px;display:none;padding:10px 14px;background:var(--red-bg);border-radius:var(--r-sm);border:1px solid rgba(224,80,48,.2)}
-.btn-login{width:100%;padding:15px;background:var(--gold);color:#1A0A02;border:none;border-radius:var(--r-sm);font-family:var(--font);font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;transition:background .18s,transform .15s,box-shadow .18s;margin-top:8px;box-shadow:0 4px 20px rgba(201,139,58,.3)}
-.btn-login:hover{background:var(--gold-l);transform:translateY(-1px)}
-.btn-login:active{transform:translateY(0)}
+.login-error{font-size:12px;color:var(--red);display:none;padding:10px 13px;background:var(--red-bg);border-radius:var(--r-sm);border:1px solid rgba(224,80,48,.2);margin-bottom:14px}
+.btn-login{
+  width:100%;padding:15px;margin-top:6px;
+  background:linear-gradient(135deg,var(--gold-l),var(--gold));color:#1A0A02;
+  border:none;border-radius:var(--r-sm);
+  font-family:var(--font);font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
+  cursor:pointer;transition:all .2s;
+  box-shadow:0 4px 24px rgba(201,139,58,.35);
+}
+.btn-login:hover{background:linear-gradient(135deg,#F0B860,var(--gold-l));transform:translateY(-1px);box-shadow:0 6px 32px rgba(201,139,58,.45)}
 .btn-login:disabled{opacity:.45;cursor:not-allowed;transform:none}
 
-/* ─ APP SHELL ───────────────────────────────────────────────────────────── */
+/* ─ APP ───────────────────────────────────────────────────────────────────── */
 #app{display:none;min-height:100vh}
 .app-layout{display:flex;min-height:100vh}
 
-/* ─ SIDEBAR ─────────────────────────────────────────────────────────────── */
-.sidebar{width:var(--sidebar);flex-shrink:0;background:var(--s1);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;transition:transform .3s}
-.sidebar-logo-wrap{padding:24px 20px 20px;border-bottom:1px solid var(--border)}
-.sidebar-logo{height:34px;width:auto;filter:brightness(0) invert(1)}
-.sidebar-week{font-size:10px;color:var(--muted);margin-top:6px;letter-spacing:.04em}
-.sidebar-week strong{color:var(--gold-d);font-weight:600}
-.sidebar-nav{flex:1;padding:12px 10px;overflow-y:auto}
-.nav-section-label{font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--dim);padding:8px 10px 4px}
-.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--r-sm);color:var(--muted);font-size:12px;font-weight:600;letter-spacing:.04em;cursor:pointer;transition:all .15s;border:none;background:none;width:100%;text-align:left;margin-bottom:2px;-webkit-tap-highlight-color:transparent}
-.nav-item svg{width:16px;height:16px;flex-shrink:0;opacity:.7}
-.nav-item:hover{color:var(--cream);background:var(--gold-dim)}
-.nav-item.active{color:var(--gold);background:var(--gold-dim)}
-.nav-item.active svg{opacity:1}
-.nav-alert-dot{width:6px;height:6px;border-radius:50%;background:var(--red);margin-left:auto;flex-shrink:0}
-.sidebar-footer{padding:14px 10px;border-top:1px solid var(--border)}
-.btn-signout{display:flex;align-items:center;gap:8px;padding:10px 12px;width:100%;background:none;border:1px solid var(--border);border-radius:var(--r-sm);color:var(--muted);font-family:var(--font);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:all .15s}
-.btn-signout:hover{color:var(--red);border-color:rgba(224,80,48,.3)}
+/* ─ SIDEBAR ───────────────────────────────────────────────────────────────── */
+.sidebar{
+  width:var(--sidebar);flex-shrink:0;position:fixed;top:0;left:0;bottom:0;z-index:200;
+  background:var(--s1);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;transition:transform .28s cubic-bezier(.4,0,.2,1);
+}
+.sb-logo-wrap{padding:22px 18px 18px;border-bottom:1px solid var(--border)}
+.sb-logo{height:32px;width:auto;filter:brightness(0) invert(1)}
+.sb-logo-txt{display:none;font-family:var(--font-d);font-size:22px;color:var(--cream);letter-spacing:.1em}
+.sb-week{font-size:10px;color:var(--muted);margin-top:5px}
+.sb-week strong{color:var(--gold-d);font-weight:600}
+.sb-nav{flex:1;padding:10px 8px;overflow-y:auto}
+.sb-section{font-size:8.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);padding:10px 10px 4px}
+.nav-btn{
+  display:flex;align-items:center;gap:9px;
+  padding:10px 12px;width:100%;border:none;background:none;border-radius:var(--r-sm);
+  color:var(--muted);font-family:var(--font);font-size:12px;font-weight:600;letter-spacing:.03em;
+  cursor:pointer;transition:all .15s;text-align:left;margin-bottom:1px;
+  -webkit-tap-highlight-color:transparent;
+}
+.nav-btn svg{width:15px;height:15px;flex-shrink:0;opacity:.65;transition:opacity .15s}
+.nav-btn:hover{color:var(--cream);background:var(--gold-dim)}
+.nav-btn.active{color:var(--gold);background:var(--gold-dim)}
+.nav-btn.active svg{opacity:1}
+.nav-dot{width:5px;height:5px;border-radius:50%;background:var(--red);margin-left:auto;flex-shrink:0}
+.sb-footer{padding:12px 8px;border-top:1px solid var(--border)}
+.btn-logout{display:flex;align-items:center;gap:8px;padding:10px 12px;width:100%;border:1px solid var(--border);border-radius:var(--r-sm);background:none;color:var(--muted);font-family:var(--font);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:all .15s}
+.btn-logout:hover{color:var(--red);border-color:rgba(224,80,48,.3)}
 
-/* ─ MAIN CONTENT ────────────────────────────────────────────────────────── */
-.main-content{flex:1;margin-left:var(--sidebar);min-height:100vh;display:flex;flex-direction:column}
-.mobile-header{display:none;position:fixed;top:0;left:0;right:0;height:56px;background:rgba(12,8,6,.95);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);z-index:99;align-items:center;justify-content:space-between;padding:0 16px}
-.mobile-logo{height:28px;filter:brightness(0) invert(1)}
-.mobile-menu-btn{background:none;border:none;color:var(--muted);cursor:pointer;padding:6px;display:flex;align-items:center}
-.mobile-week-badge{font-size:10px;color:var(--gold-d);font-weight:700;letter-spacing:.04em;background:var(--gold-dim);padding:4px 10px;border-radius:99px}
+/* ─ MAIN ──────────────────────────────────────────────────────────────────── */
+.main{flex:1;margin-left:var(--sidebar);min-height:100vh}
+.mob-hd{display:none;position:fixed;top:0;left:0;right:0;height:56px;background:rgba(8,5,3,.96);backdrop-filter:blur(24px);border-bottom:1px solid var(--border);z-index:190;align-items:center;justify-content:space-between;padding:0 16px}
+.mob-logo{height:26px;filter:brightness(0) invert(1)}
+.mob-menu{background:none;border:none;color:var(--muted);cursor:pointer;padding:8px;display:flex;align-items:center}
+.mob-week{font-size:10px;color:var(--gold-d);font-weight:700;background:var(--gold-dim);padding:4px 10px;border-radius:99px;letter-spacing:.04em}
 
-/* ─ VIEW ────────────────────────────────────────────────────────────────── */
-.view{padding:28px 28px 80px;max-width:1200px;display:none}
+/* ─ VIEWS ─────────────────────────────────────────────────────────────────── */
+.view{padding:28px 26px 90px;max-width:1200px;display:none}
 .view.active{display:block}
-.view-hd{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:28px;flex-wrap:wrap}
-.view-title-wrap .eyebrow{font-size:9px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:4px}
-.view-title-wrap h1{font-family:var(--font-d);font-size:30px;font-weight:600;color:var(--cream);line-height:1.1;letter-spacing:-.01em}
-.view-title-wrap .subtitle{font-size:12px;color:var(--muted);margin-top:3px}
+.view-hd{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:26px;flex-wrap:wrap}
+.eyebrow{font-size:9px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:4px}
+.view-hd h1{font-family:var(--font-d);font-size:30px;font-weight:600;color:var(--cream);line-height:1.1;letter-spacing:-.01em}
+.view-hd .sub{font-size:12px;color:var(--muted);margin-top:3px}
 .view-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 
-/* ─ WEEK NAVIGATOR ──────────────────────────────────────────────────────── */
-.week-nav{display:inline-flex;align-items:center;background:var(--s1);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.3)}
-.week-btn{padding:10px 16px;background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;transition:all .15s;min-height:44px;-webkit-tap-highlight-color:transparent}
-.week-btn:hover{color:var(--gold);background:var(--gold-dim)}
-.week-label-wrap{padding:10px 16px;border-left:1px solid var(--border);border-right:1px solid var(--border);text-align:center}
-.week-label-wrap strong{font-family:var(--font-d);font-size:14px;font-weight:600;color:var(--cream);display:block}
-.week-label-wrap small{font-size:10px;color:var(--muted)}
+/* ─ WEEK NAV ──────────────────────────────────────────────────────────────── */
+.week-nav{display:inline-flex;align-items:center;background:var(--s1);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,.35)}
+.wk-btn{padding:10px 15px;background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;transition:all .15s;min-height:44px;-webkit-tap-highlight-color:transparent}
+.wk-btn:hover{color:var(--gold);background:var(--gold-dim)}
+.wk-lbl{padding:10px 14px;border-left:1px solid var(--border);border-right:1px solid var(--border);text-align:center}
+.wk-lbl strong{font-family:var(--font-d);font-size:14px;font-weight:600;color:var(--cream);display:block}
+.wk-lbl small{font-size:10px;color:var(--muted)}
 
-/* ─ BUTTONS ─────────────────────────────────────────────────────────────── */
-.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:var(--r-sm);border:none;font-family:var(--font);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:all .15s;white-space:nowrap;text-decoration:none;-webkit-tap-highlight-color:transparent}
-.btn-primary{background:var(--gold);color:#1A0A02;box-shadow:0 2px 12px rgba(201,139,58,.25)}
-.btn-primary:hover{background:var(--gold-l);transform:translateY(-1px)}
+/* ─ BUTTONS ───────────────────────────────────────────────────────────────── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 17px;border-radius:var(--r-sm);border:none;font-family:var(--font);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:all .15s;white-space:nowrap;text-decoration:none;-webkit-tap-highlight-color:transparent}
+.btn-primary{background:linear-gradient(135deg,var(--gold-l),var(--gold));color:#1A0A02;box-shadow:0 2px 16px rgba(201,139,58,.3)}
+.btn-primary:hover{background:linear-gradient(135deg,#F0B860,var(--gold-l));transform:translateY(-1px)}
 .btn-ghost{background:var(--gold-dim);color:var(--gold);border:1px solid var(--border-h)}
-.btn-ghost:hover{background:var(--s3)}
-.btn-danger{background:var(--red-bg);color:var(--red);border:1px solid rgba(224,80,48,.2)}
-.btn-danger:hover{background:rgba(224,80,48,.16)}
+.btn-ghost:hover{background:var(--s3);border-color:var(--gold)}
+.btn-danger{background:var(--red-bg);color:var(--red);border:1px solid rgba(224,80,48,.22)}
+.btn-danger:hover{background:rgba(224,80,48,.18)}
 .btn-wa{background:#25D366;color:#fff}
 .btn-wa:hover{background:#1dba58}
 .btn-sm{padding:6px 12px;font-size:10px}
-.btn-icon{padding:8px;border-radius:var(--r-sm);background:var(--gold-dim);border:1px solid var(--border);color:var(--muted);cursor:pointer;transition:all .15s;display:inline-flex;align-items:center}
-.btn-icon:hover{color:var(--cream);border-color:var(--border-h)}
 .btn:disabled{opacity:.45;cursor:not-allowed;transform:none!important}
 
-/* ─ CARDS ───────────────────────────────────────────────────────────────── */
-.card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:20px;box-shadow:0 2px 16px rgba(0,0,0,.25)}
-.card-grid{display:grid;gap:16px}
+/* ─ KPI CARDS ─────────────────────────────────────────────────────────────── */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin-bottom:22px}
+.kpi{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:16px 15px;position:relative;overflow:hidden;transition:border-color .2s,box-shadow .2s}
+.kpi:hover{border-color:var(--border-h);box-shadow:0 4px 24px rgba(0,0,0,.4)}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:var(--r) var(--r) 0 0}
+.kpi.k-gold::before{background:linear-gradient(90deg,var(--gold-d),var(--gold-l))}
+.kpi.k-green::before{background:var(--green)}
+.kpi.k-red::before{background:var(--red)}
+.kpi.k-amber::before{background:var(--amber)}
+.kpi.k-blue::before{background:var(--blue)}
+.kpi-label{font-size:9.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:7px}
+.kpi-val{font-family:var(--font-d);font-size:30px;font-weight:700;color:var(--cream);line-height:1;margin-bottom:3px}
+.kpi-sub{font-size:10px;color:var(--dim)}
+.kpi.k-red .kpi-val{color:var(--red)}
+.kpi.k-amber .kpi-val{color:var(--amber)}
+.kpi.k-green .kpi-val{color:var(--green)}
+.kpi-bar{height:3px;background:var(--s3);border-radius:2px;margin-top:9px;overflow:hidden}
+.kpi-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--gold-d),var(--gold-l));transition:width .5s}
 
-/* ─ KPI CARDS ───────────────────────────────────────────────────────────── */
-.kpi-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:24px}
-.kpi-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:18px 16px;position:relative;overflow:hidden;transition:border-color .2s}
-.kpi-card:hover{border-color:var(--border-h)}
-.kpi-card::before{content:'';position:absolute;inset:0 0 auto 0;height:2px;border-radius:var(--r) var(--r) 0 0}
-.kpi-card.kpi-gold::before{background:var(--gold)}
-.kpi-card.kpi-green::before{background:var(--green)}
-.kpi-card.kpi-red::before{background:var(--red)}
-.kpi-card.kpi-amber::before{background:var(--amber)}
-.kpi-card.kpi-blue::before{background:var(--blue)}
-.kpi-label{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
-.kpi-value{font-family:var(--font-d);font-size:32px;font-weight:700;color:var(--cream);line-height:1;margin-bottom:4px}
-.kpi-sub{font-size:11px;color:var(--dim)}
-.kpi-card.kpi-red .kpi-value{color:var(--red)}
-.kpi-card.kpi-amber .kpi-value{color:var(--amber)}
-.kpi-card.kpi-green .kpi-value{color:var(--green)}
-.progress-bar{height:4px;background:var(--s3);border-radius:2px;margin-top:10px;overflow:hidden}
-.progress-fill{height:100%;border-radius:2px;background:var(--gold);transition:width .4s}
+/* ─ SECTION LABEL ─────────────────────────────────────────────────────────── */
+.section-lbl{font-size:9px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;margin-top:22px}
+.section-lbl:first-child{margin-top:0}
+.divider{height:1px;background:var(--border);margin:20px 0}
 
-/* ─ SHOP STATUS GRID ────────────────────────────────────────────────────── */
-.shops-status-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
-.shop-status-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;cursor:pointer;transition:all .15s}
-.shop-status-card:hover{border-color:var(--border-h);transform:translateY(-1px)}
-.shop-status-card.ssc-ok{border-left:3px solid var(--green)}
-.shop-status-card.ssc-warn{border-left:3px solid var(--amber)}
-.shop-status-card.ssc-err{border-left:3px solid var(--red)}
-.shop-status-card.ssc-empty{border-left:3px solid var(--s3)}
-.ssc-name{font-family:var(--font-d);font-size:15px;font-weight:600;color:var(--cream);margin-bottom:6px}
-.ssc-meta{display:flex;align-items:center;justify-content:space-between;gap:8px}
+/* ─ CARD ──────────────────────────────────────────────────────────────────── */
+.card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);box-shadow:0 2px 16px rgba(0,0,0,.25)}
+
+/* ─ DASHBOARD LAYOUT ──────────────────────────────────────────────────────── */
+.dash-cols{display:grid;grid-template-columns:1fr 320px;gap:18px;align-items:start}
+
+/* ─ SHOP STATUS CARDS ─────────────────────────────────────────────────────── */
+.ssc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.ssc{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px 15px;cursor:pointer;transition:all .18s;border-left:3px solid var(--s3)}
+.ssc:hover{transform:translateY(-1px);box-shadow:0 6px 24px rgba(0,0,0,.4)}
+.ssc.ok{border-left-color:var(--green)}.ssc.warn{border-left-color:var(--amber)}.ssc.err{border-left-color:var(--red)}.ssc.empty{border-left-color:var(--dim)}
+.ssc-name{font-family:var(--font-d);font-size:15px;font-weight:600;color:var(--cream);margin-bottom:5px}
+.ssc-row{display:flex;align-items:center;justify-content:space-between;gap:6px}
 .ssc-stat{font-size:11px;color:var(--muted)}
 .ssc-stat strong{color:var(--cream)}
+.ssc-last{font-size:10px;color:var(--dim);margin-top:5px}
 
-/* ─ BADGE ───────────────────────────────────────────────────────────────── */
-.badge{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:3px 9px;border-radius:99px}
-.badge-ok{background:var(--green-bg);color:var(--green);border:1px solid rgba(90,174,122,.2)}
-.badge-warn{background:var(--amber-bg);color:var(--amber);border:1px solid rgba(204,136,0,.2)}
-.badge-err{background:var(--red-bg);color:var(--red);border:1px solid rgba(224,80,48,.2)}
-.badge-empty{background:var(--s2);color:var(--muted);border:1px solid var(--border)}
-.badge-blue{background:var(--blue-bg);color:var(--blue);border:1px solid rgba(74,143,212,.2)}
+/* ─ BADGE ─────────────────────────────────────────────────────────────────── */
+.badge{font-size:8.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:2px 8px;border-radius:99px}
+.b-ok{background:var(--green-bg);color:var(--green);border:1px solid rgba(78,168,106,.22)}
+.b-warn{background:var(--amber-bg);color:var(--amber);border:1px solid rgba(212,136,42,.22)}
+.b-err{background:var(--red-bg);color:var(--red);border:1px solid rgba(224,80,48,.22)}
+.b-empty{background:var(--s2);color:var(--muted);border:1px solid var(--border)}
+.b-blue{background:var(--blue-bg);color:var(--blue);border:1px solid rgba(74,143,212,.22)}
 
-/* ─ ALERTS PANEL ────────────────────────────────────────────────────────── */
-.alert-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:var(--r-sm);margin-bottom:6px}
-.alert-item.alert-err{background:var(--red-bg);border:1px solid rgba(224,80,48,.15)}
-.alert-item.alert-warn{background:var(--amber-bg);border:1px solid rgba(204,136,0,.15)}
-.alert-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.alert-dot-red{background:var(--red)}
-.alert-dot-amber{background:var(--amber)}
+/* ─ ALERT ITEMS ───────────────────────────────────────────────────────────── */
+.alert-item{display:flex;align-items:center;gap:10px;padding:10px 13px;border-radius:var(--r-sm);margin-bottom:6px}
+.alert-item.a-err{background:var(--red-bg);border:1px solid rgba(224,80,48,.15)}
+.alert-item.a-warn{background:var(--amber-bg);border:1px solid rgba(212,136,42,.15)}
+.alert-icon{font-size:15px;flex-shrink:0}
 .alert-text{font-size:12px;color:var(--cream);flex:1}
-.alert-shop{font-size:10px;color:var(--muted)}
+.alert-sub{font-size:10px;color:var(--muted)}
 
-/* ─ TWO COLUMN LAYOUT ───────────────────────────────────────────────────── */
-.dash-cols{display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start}
-@media(max-width:900px){.dash-cols{grid-template-columns:1fr}}
+/* ─ PRODUCT PERF TABLE ────────────────────────────────────────────────────── */
+.data-tbl{width:100%;border-collapse:collapse}
+.data-tbl th{padding:9px 11px;background:var(--s2);color:var(--muted);font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
+.data-tbl td{padding:9px 11px;border-bottom:1px solid rgba(201,139,58,.05);color:var(--cream);vertical-align:middle;font-size:13px}
+.data-tbl tr:last-child td{border-bottom:none}
+.data-tbl tr:hover td{background:rgba(201,139,58,.04)}
+.prod-img-sm{width:36px;height:44px;object-fit:cover;border-radius:5px;border:1px solid var(--border)}
+.prod-img-fallback{width:36px;height:44px;background:var(--s3);border-radius:5px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:18px}
+.num-big{font-family:var(--font-d);font-size:17px;font-weight:600}
 
-/* ─ PRODUCT SUMMARY TABLE ───────────────────────────────────────────────── */
-.data-table{width:100%;border-collapse:collapse}
-.data-table th{padding:9px 12px;background:var(--s2);color:var(--muted);font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
-.data-table th:not(:first-child),.data-table th:not(:nth-child(2)){text-align:center}
-.data-table td{padding:9px 12px;border-bottom:1px solid rgba(201,139,58,.05);color:var(--cream);vertical-align:middle;font-size:13px}
-.data-table td:not(:first-child):not(:nth-child(2)){text-align:center}
-.data-table tr:last-child td{border-bottom:none}
-.data-table tr:hover td{background:var(--gold-dim2)}
-.data-table .num{font-family:var(--font-d);font-size:16px;font-weight:600}
-.data-table .cat-pill{font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:99px;background:var(--gold-dim);color:var(--gold-d);border:1px solid var(--border)}
-
-/* ─ STOCK ENTRY ─────────────────────────────────────────────────────────── */
-.shop-accordion{display:flex;flex-direction:column;gap:8px}
+/* ─ STOCK ACCORDION ───────────────────────────────────────────────────────── */
+.acc-list{display:flex;flex-direction:column;gap:8px}
 .acc-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;transition:border-color .2s}
-.acc-card.acc-open{border-color:var(--border-h)}
-.acc-card.acc-error{border-color:rgba(224,80,48,.3)}
-.acc-hd{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;cursor:pointer;user-select:none;transition:background .15s;min-height:62px;-webkit-tap-highlight-color:transparent}
-.acc-hd:hover{background:var(--gold-dim2)}
-.acc-hd-left{display:flex;align-items:center;gap:12px}
-.acc-icon{width:36px;height:36px;border-radius:10px;background:var(--gold-dim);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
-.acc-name{font-family:var(--font-d);font-size:17px;font-weight:600;color:var(--cream)}
-.acc-type{font-size:10px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;font-weight:600}
-.acc-hd-right{display:flex;align-items:center;gap:10px}
-.chevron{color:var(--muted);transition:transform .22s;font-size:18px;line-height:1}
-.acc-open .chevron{transform:rotate(90deg);color:var(--gold)}
+.acc-card.is-open{border-color:var(--border-h)}
+.acc-card.has-err{border-color:rgba(224,80,48,.3)}
+.acc-hd{display:flex;align-items:center;justify-content:space-between;padding:13px 17px;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;min-height:62px;transition:background .15s}
+.acc-hd:hover{background:rgba(201,139,58,.04)}
+.acc-left{display:flex;align-items:center;gap:11px}
+.acc-icon{width:38px;height:38px;border-radius:10px;background:var(--gold-dim);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.acc-name{font-family:var(--font-d);font-size:16px;font-weight:600;color:var(--cream)}
+.acc-meta{font-size:10px;color:var(--muted);margin-top:1px}
+.acc-right{display:flex;align-items:center;gap:9px;flex-shrink:0}
+.chev{color:var(--muted);font-size:18px;line-height:1;transition:transform .22s,color .15s}
+.is-open .chev{transform:rotate(90deg);color:var(--gold)}
+
+/* ─ AUTOSAVE indicator ─────────────────────────────────────────────────────── */
+.as-ind{font-size:10px;font-weight:700;letter-spacing:.05em;transition:color .2s;min-width:60px}
+.as-ind.saving{color:var(--amber)}
+.as-ind.saved{color:var(--green)}
+.as-ind.err{color:var(--red)}
+
+/* ─ STOCK TABLE (desktop) ─────────────────────────────────────────────────── */
 .acc-body{display:none;border-top:1px solid var(--border)}
-.acc-open .acc-body{display:block}
+.is-open .acc-body{display:block}
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.stk-tbl{width:100%;border-collapse:collapse;min-width:480px}
+.stk-tbl th{padding:8px 10px;background:var(--s2);color:var(--muted);font-size:8.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;text-align:center;border-bottom:1px solid var(--border);white-space:nowrap}
+.stk-tbl th:first-child{text-align:left;min-width:160px}
+.stk-tbl td{padding:7px 8px;border-bottom:1px solid rgba(201,139,58,.05);vertical-align:middle;text-align:center}
+.stk-tbl td:first-child{text-align:left}
+.stk-tbl tr:last-child td{border-bottom:none}
+.stk-tbl tr.row-err td{background:var(--red-bg)}
+.stk-tbl tr:not(.row-err):hover td{background:rgba(201,139,58,.04)}
+.prod-cell{display:flex;align-items:center;gap:8px}
+.prod-cell img{width:32px;height:40px;object-fit:cover;border-radius:4px;border:1px solid var(--border)}
+.prod-cell .no-img{width:32px;height:40px;background:var(--s3);border-radius:4px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.pname{font-size:13px;color:var(--cream);font-weight:500}
+.pcat{font-size:9px;color:var(--muted);letter-spacing:.05em;text-transform:uppercase}
+.num-inp{width:66px;padding:7px 6px;background:var(--s2);border:1.5px solid var(--border);border-radius:7px;color:var(--cream);font-family:var(--font);font-size:14px;text-align:center;transition:border-color .15s;-webkit-appearance:none;touch-action:manipulation}
+.num-inp:focus{outline:none;border-color:var(--gold);background:var(--s3)}
+.rem-val{font-family:var(--font-d);font-size:18px;font-weight:600}
+.rem-val.pos{color:var(--green)}.rem-val.low{color:var(--amber)}.rem-val.neg{color:var(--red)}.rem-val.nil{color:var(--dim)}
+.st-ok{color:var(--green)}.st-err{color:var(--red)}.st-nil{color:var(--dim)}
 
-/* Stock table inside accordion */
-.stock-tbl-wrap{overflow-x:auto}
-.stock-tbl{width:100%;border-collapse:collapse;min-width:520px}
-.stock-tbl th{padding:9px 12px;background:var(--s2);color:var(--muted);font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;text-align:center;border-bottom:1px solid var(--border);white-space:nowrap}
-.stock-tbl th:first-child{text-align:left}
-.stock-tbl td{padding:8px 10px;border-bottom:1px solid rgba(201,139,58,.05);vertical-align:middle;text-align:center}
-.stock-tbl td:first-child{text-align:left}
-.stock-tbl tr:last-child td{border-bottom:none}
-.stock-tbl tr.row-err td{background:var(--red-bg)}
-.stock-tbl tr:not(.row-err):hover td{background:var(--gold-dim2)}
-.pname{font-size:13px;color:var(--cream);white-space:nowrap}
-.pcat{font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);display:block}
-.num-input{width:68px;padding:7px 8px;background:var(--s2);border:1.5px solid var(--border);border-radius:7px;color:var(--cream);font-family:var(--font);font-size:14px;text-align:center;transition:border-color .15s;-webkit-appearance:none}
-.num-input:focus{outline:none;border-color:var(--gold);background:var(--s3)}
-.stock-auto{font-family:var(--font-d);font-size:17px;font-weight:600;color:var(--green)}
-.stock-auto.negative{color:var(--red)}
-.stock-auto.low{color:var(--amber)}
-.stock-auto.empty{color:var(--dim)}
-.st-ok{color:var(--green);font-size:15px}
-.st-err{color:var(--red);font-size:15px;font-weight:700}
-.st-nil{color:var(--dim);font-size:15px}
-.acc-footer{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--s2);border-top:1px solid var(--border);gap:8px;flex-wrap:wrap}
-.saved-msg{font-size:11px;color:var(--green);font-weight:700;opacity:0;transition:opacity .3s}
-.saved-msg.show{opacity:1}
+/* ─ STOCK CARDS (mobile) ──────────────────────────────────────────────────── */
+.stk-cards{display:none;flex-direction:column;gap:1px}
+.stk-card{background:var(--s1);border-bottom:1px solid var(--border);padding:12px 14px}
+.stk-card.sc-err{background:rgba(224,80,48,.06)}
+.sc-top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.sc-img{width:40px;height:50px;object-fit:cover;border-radius:6px;border:1px solid var(--border);flex-shrink:0}
+.sc-no-img{width:40px;height:50px;background:var(--s3);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.sc-pname{font-family:var(--font-d);font-size:16px;font-weight:600;color:var(--cream);line-height:1.2}
+.sc-pcat{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.sc-rem{margin-left:auto;text-align:right;flex-shrink:0}
+.sc-rem-val{font-family:var(--font-d);font-size:22px;font-weight:700}
+.sc-rem-lbl{font-size:9px;color:var(--muted);text-align:right}
+.sc-inputs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.sc-field label{display:block;font-size:8.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;text-align:center}
+.sc-inp{width:100%;padding:10px 6px;background:var(--s2);border:1.5px solid var(--border);border-radius:8px;color:var(--cream);font-family:var(--font);font-size:16px;text-align:center;-webkit-appearance:none;touch-action:manipulation;transition:border-color .15s}
+.sc-inp:focus{outline:none;border-color:var(--gold);background:var(--s3)}
 
-/* ─ SHOPS MANAGEMENT ────────────────────────────────────────────────────── */
-.shops-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
-.shop-mgmt-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:18px 20px}
-.shop-mgmt-card:hover{border-color:var(--border-h)}
-.smc-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
-.smc-name{font-family:var(--font-d);font-size:18px;font-weight:600;color:var(--cream)}
-.smc-fields{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
-.smc-field label{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:3px}
-.smc-input{width:100%;padding:9px 12px;background:var(--s2);border:1.5px solid var(--border);border-radius:var(--r-sm);color:var(--cream);font-family:var(--font);font-size:13px;transition:border-color .15s}
-.smc-input:focus{outline:none;border-color:var(--gold);background:var(--s3)}
-.smc-input::placeholder{color:var(--dim)}
-.smc-footer{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.smc-last{font-size:10px;color:var(--dim)}
-.add-shop-row{display:flex;gap:8px;margin-bottom:20px}
-.add-shop-input{flex:1;padding:11px 14px;background:var(--s1);border:1.5px solid var(--border);border-radius:var(--r-sm);color:var(--cream);font-family:var(--font);font-size:14px;transition:border-color .15s}
-.add-shop-input:focus{outline:none;border-color:var(--gold)}
-.add-shop-input::placeholder{color:var(--dim)}
+/* ─ ACC FOOTER ─────────────────────────────────────────────────────────────── */
+.acc-footer{display:flex;align-items:center;justify-content:space-between;padding:11px 15px;background:var(--s2);border-top:1px solid var(--border);gap:8px;flex-wrap:wrap}
+.footer-left{display:flex;align-items:center;gap:10px}
 
-/* ─ WORKFLOW ────────────────────────────────────────────────────────────── */
-.wf-section{margin-bottom:28px}
-.wf-section-title{font-family:var(--font-d);font-size:20px;font-weight:600;color:var(--cream);margin-bottom:14px;display:flex;align-items:center;gap:10px}
-.wf-section-title .wf-count{font-family:var(--font);font-size:11px;font-weight:700;color:var(--muted);background:var(--s2);padding:3px 10px;border-radius:99px;letter-spacing:.04em}
-.wf-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px}
-.wf-item{display:flex;align-items:center;gap:10px;padding:11px 14px;background:var(--s1);border:1px solid var(--border);border-radius:var(--r-sm)}
-.wf-check{width:22px;height:22px;border-radius:6px;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s;cursor:pointer}
-.wf-check.yes{background:var(--green);border-color:var(--green)}
-.wf-check.no{background:var(--red-bg);border-color:var(--red)}
-.wf-check.auto{cursor:default}
-.wf-check.yes::after{content:'✓';font-size:12px;font-weight:700;color:#fff;line-height:1}
-.wf-check.no::after{content:'✗';font-size:12px;font-weight:700;color:var(--red);line-height:1}
-.wf-label{font-size:12px;color:var(--cream);flex:1;line-height:1.3}
-.wf-label .wf-shop{font-size:10px;color:var(--muted);display:block}
-.wf-toggle{font-size:10px;font-weight:700;letter-spacing:.05em;color:var(--muted);background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:3px 8px;cursor:pointer;transition:all .15s;flex-shrink:0;text-transform:uppercase}
-.wf-toggle:hover{color:var(--cream);border-color:var(--border-h)}
-.wf-summary-bar{display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--s1);border:1px solid var(--border);border-radius:var(--r);margin-bottom:24px}
-.wf-pct{font-family:var(--font-d);font-size:28px;font-weight:700;color:var(--gold)}
-.wf-pct-label{font-size:12px;color:var(--muted)}
-.wf-pct-bar{flex:1;height:6px;background:var(--s3);border-radius:3px;overflow:hidden}
-.wf-pct-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--gold-d),var(--gold));transition:width .5s}
+/* ─ SHOPS GRID ────────────────────────────────────────────────────────────── */
+.add-row{display:flex;gap:8px;margin-bottom:18px}
+.add-inp{flex:1;padding:11px 14px;background:var(--s1);border:1.5px solid var(--border);border-radius:var(--r-sm);color:var(--cream);font-family:var(--font);font-size:14px;transition:border-color .15s}
+.add-inp:focus{outline:none;border-color:var(--gold)}
+.add-inp::placeholder{color:var(--dim)}
+.shops-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px}
+.shop-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:18px 19px;transition:border-color .2s}
+.shop-card:hover{border-color:var(--border-h)}
+.sc-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.sc-title{display:flex;align-items:center;gap:9px}
+.sc-icon{font-size:20px}
+.sc-sname{font-family:var(--font-d);font-size:17px;font-weight:600;color:var(--cream)}
+.field-grp{display:flex;flex-direction:column;gap:7px;margin-bottom:14px}
+.field-lbl{font-size:8.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:3px}
+.field-inp{width:100%;padding:9px 11px;background:var(--s2);border:1.5px solid var(--border);border-radius:var(--r-sm);color:var(--cream);font-family:var(--font);font-size:13px;transition:border-color .15s}
+.field-inp:focus{outline:none;border-color:var(--gold);background:var(--s3)}
+.field-inp::placeholder{color:var(--dim)}
+.sc-ft{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.sc-last{font-size:10px;color:var(--dim)}
 
-/* ─ REPORTS ─────────────────────────────────────────────────────────────── */
-.reports-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
-.report-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:22px;display:flex;flex-direction:column;gap:14px}
-.report-card-icon{font-size:28px;margin-bottom:2px}
-.report-card-title{font-family:var(--font-d);font-size:18px;font-weight:600;color:var(--cream)}
-.report-card-desc{font-size:12px;color:var(--muted);line-height:1.5}
-.report-week-sel{width:100%;padding:9px 12px;background:var(--s2);border:1.5px solid var(--border);border-radius:var(--r-sm);color:var(--cream);font-family:var(--font);font-size:13px;cursor:pointer}
-.report-week-sel:focus{outline:none;border-color:var(--gold)}
+/* ─ WORKFLOW ──────────────────────────────────────────────────────────────── */
+.wf-bar{display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--s1);border:1px solid var(--border);border-radius:var(--r);margin-bottom:22px;box-shadow:0 2px 16px rgba(0,0,0,.25)}
+.wf-pct{font-family:var(--font-d);font-size:28px;font-weight:700;color:var(--gold);min-width:58px}
+.wf-bar-track{flex:1;height:5px;background:var(--s3);border-radius:3px;overflow:hidden}
+.wf-bar-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--gold-d),var(--gold-l));transition:width .5s}
+.wf-pct-lbl{font-size:11px;color:var(--muted)}
+.wf-section{margin-bottom:24px}
+.wf-section-hd{font-family:var(--font-d);font-size:19px;font-weight:600;color:var(--cream);margin-bottom:12px;display:flex;align-items:center;gap:10px}
+.wf-count{font-family:var(--font);font-size:10px;font-weight:700;color:var(--muted);background:var(--s2);padding:2px 9px;border-radius:99px;letter-spacing:.04em}
+.wf-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:7px}
+.wf-item{display:flex;align-items:center;gap:9px;padding:10px 12px;background:var(--s1);border:1px solid var(--border);border-radius:var(--r-sm)}
+.wf-chk{width:21px;height:21px;border-radius:5px;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.wf-chk.yes{background:var(--green);border-color:var(--green)}
+.wf-chk.no{background:var(--red-bg);border-color:var(--red)}
+.wf-chk.yes::after{content:'✓';font-size:11px;font-weight:700;color:#fff}
+.wf-chk.no::after{content:'✗';font-size:11px;font-weight:700;color:var(--red)}
+.wf-lbl{font-size:11.5px;color:var(--cream);flex:1;line-height:1.3}
+.wf-shop-lbl{font-size:9px;color:var(--muted);display:block}
+.wf-tog{font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);background:var(--s2);border:1px solid var(--border);border-radius:5px;padding:3px 7px;cursor:pointer;transition:all .15s;flex-shrink:0;white-space:nowrap}
+.wf-tog:hover{color:var(--cream);border-color:var(--border-h)}
 
-/* ─ LOGS ────────────────────────────────────────────────────────────────── */
-.log-list{display:flex;flex-direction:column;gap:6px}
-.log-item{display:flex;align-items:flex-start;gap:12px;padding:11px 14px;background:var(--s1);border:1px solid var(--border);border-radius:var(--r-sm)}
-.log-time{font-size:10px;color:var(--dim);white-space:nowrap;padding-top:2px;min-width:120px}
-.log-badge{font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:99px}
-.lb-save{background:var(--green-bg);color:var(--green);border:1px solid rgba(90,174,122,.2)}
+/* ─ REPORTS ───────────────────────────────────────────────────────────────── */
+.rpt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px}
+.rpt-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:22px;display:flex;flex-direction:column;gap:12px}
+.rpt-icon{font-size:26px}
+.rpt-title{font-family:var(--font-d);font-size:18px;font-weight:600;color:var(--cream)}
+.rpt-desc{font-size:12px;color:var(--muted);line-height:1.5}
+.rpt-week-sel{width:100%;padding:9px 11px;background:var(--s2);border:1.5px solid var(--border);border-radius:var(--r-sm);color:var(--cream);font-family:var(--font);font-size:13px;cursor:pointer;max-width:360px}
+.rpt-week-sel:focus{outline:none;border-color:var(--gold)}
+
+/* ─ LOGS ──────────────────────────────────────────────────────────────────── */
+.log-list{display:flex;flex-direction:column;gap:5px}
+.log-item{display:flex;align-items:flex-start;gap:11px;padding:10px 13px;background:var(--s1);border:1px solid var(--border);border-radius:var(--r-sm)}
+.log-time{font-size:9.5px;color:var(--dim);white-space:nowrap;padding-top:2px;min-width:108px}
+.log-body{flex:1}
+.log-badge{font-size:8.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:99px}
+.lb-save{background:var(--green-bg);color:var(--green);border:1px solid rgba(78,168,106,.2)}
 .lb-shop{background:var(--blue-bg);color:var(--blue);border:1px solid rgba(74,143,212,.2)}
 .lb-del{background:var(--red-bg);color:var(--red);border:1px solid rgba(224,80,48,.2)}
 .lb-email{background:var(--gold-dim);color:var(--gold);border:1px solid var(--border)}
 .lb-other{background:var(--s2);color:var(--muted);border:1px solid var(--border)}
-.log-action{flex:1}
-.log-desc{font-size:12px;color:var(--cream);margin-left:8px}
-.log-sub{font-size:10px;color:var(--muted);margin-top:3px}
+.log-desc{font-size:12px;color:var(--cream);margin-left:7px}
+.log-sub{font-size:10px;color:var(--muted);margin-top:2px}
 
-/* ─ SECTION ─────────────────────────────────────────────────────────────── */
-.section-label{font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;margin-top:24px}
-.section-label:first-child{margin-top:0}
+/* ─ EMPTY STATE ───────────────────────────────────────────────────────────── */
+.empty{text-align:center;padding:44px 24px;color:var(--muted)}
+.empty .ei{font-size:34px;margin-bottom:10px}
+.empty h3{font-family:var(--font-d);font-size:19px;color:var(--cream-d);margin-bottom:5px}
+.empty p{font-size:12px}
 
-/* ─ EMPTY STATE ─────────────────────────────────────────────────────────── */
-.empty-state{text-align:center;padding:48px 24px;color:var(--muted)}
-.empty-state .empty-icon{font-size:36px;margin-bottom:12px}
-.empty-state h3{font-family:var(--font-d);font-size:20px;color:var(--cream-d);margin-bottom:6px}
-.empty-state p{font-size:13px}
+/* ─ TOAST ─────────────────────────────────────────────────────────────────── */
+#toasts{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:7px;pointer-events:none;max-width:340px}
+.toast{padding:11px 16px;border-radius:var(--r-sm);font-size:13px;font-weight:600;pointer-events:auto;box-shadow:0 4px 24px rgba(0,0,0,.55);animation:toastIn .22s ease;display:flex;align-items:center;gap:8px}
+.t-ok{background:#152B1D;color:var(--green);border:1px solid rgba(78,168,106,.3)}
+.t-err{background:#2B1515;color:var(--red);border:1px solid rgba(224,80,48,.3)}
+.t-inf{background:var(--s2);color:var(--cream);border:1px solid var(--border)}
+@keyframes toastIn{from{transform:translateX(110%);opacity:0}to{transform:translateX(0);opacity:1}}
 
-/* ─ TOAST ───────────────────────────────────────────────────────────────── */
-#toasts{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none}
-.toast{padding:12px 18px;border-radius:var(--r-sm);font-size:13px;font-weight:600;pointer-events:auto;box-shadow:0 4px 24px rgba(0,0,0,.5);animation:slideIn .25s ease;max-width:360px;display:flex;align-items:center;gap:10px}
-.toast-ok{background:#1a3b26;color:var(--green);border:1px solid rgba(90,174,122,.3)}
-.toast-err{background:#3b1a1a;color:var(--red);border:1px solid rgba(224,80,48,.3)}
-.toast-inf{background:var(--s2);color:var(--cream);border:1px solid var(--border)}
-@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+/* ─ BOTTOM NAV ────────────────────────────────────────────────────────────── */
+.bot-nav{display:none;position:fixed;bottom:0;left:0;right:0;height:58px;background:rgba(8,5,3,.97);backdrop-filter:blur(24px);border-top:1px solid var(--border);z-index:190;flex-direction:row;align-items:center}
+.bn-btn{display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 0;border:none;background:none;color:var(--muted);font-family:var(--font);font-size:8.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;flex:1;transition:color .15s;-webkit-tap-highlight-color:transparent}
+.bn-btn svg{width:20px;height:20px}
+.bn-btn.active{color:var(--gold)}
+.sb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:199;backdrop-filter:blur(2px)}
+.sb-overlay.show{display:block}
 
-/* ─ MOBILE ──────────────────────────────────────────────────────────────── */
-.bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;height:60px;background:rgba(12,8,6,.97);backdrop-filter:blur(20px);border-top:1px solid var(--border);z-index:100;flex-direction:row;align-items:center;justify-content:space-around;padding:0 4px}
-.bnav-btn{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 12px;border:none;background:none;color:var(--muted);font-family:var(--font);font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;flex:1;transition:color .15s;-webkit-tap-highlight-color:transparent}
-.bnav-btn svg{width:20px;height:20px}
-.bnav-btn.active{color:var(--gold)}
-
+/* ─ RESPONSIVE ────────────────────────────────────────────────────────────── */
 @media(max-width:768px){
   .sidebar{transform:translateX(-100%)}
   .sidebar.open{transform:translateX(0);box-shadow:4px 0 40px rgba(0,0,0,.8)}
-  .main-content{margin-left:0;padding-top:56px}
-  .mobile-header{display:flex}
-  .bottom-nav{display:flex}
-  .view{padding:16px 14px 76px}
-  .view-hd{flex-direction:column}
+  .main{margin-left:0;padding-top:56px}
+  .mob-hd{display:flex}
+  .bot-nav{display:flex}
+  .view{padding:14px 12px 72px}
+  .view-hd{flex-direction:column;gap:10px}
   .kpi-row{grid-template-columns:repeat(2,1fr);gap:8px}
-  .kpi-value{font-size:26px}
+  .kpi-val{font-size:24px}
   .dash-cols{grid-template-columns:1fr}
+  .ssc-grid{grid-template-columns:1fr 1fr}
   .shops-grid{grid-template-columns:1fr}
   .wf-grid{grid-template-columns:1fr}
-  .reports-grid{grid-template-columns:1fr}
-  #toasts{bottom:72px;right:12px;left:12px}
-  .stock-tbl .num-input{width:58px;font-size:13px}
+  .rpt-grid{grid-template-columns:1fr}
+  #toasts{bottom:66px;right:10px;left:10px}
+  .stk-tbl{display:none}
+  .stk-cards{display:flex}
+  .tbl-wrap{display:none}
 }
-
-/* ─ OVERLAY ─────────────────────────────────────────────────────────────── */
-#sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99}
-#sidebar-overlay.show{display:block}
-
-/* ─ MISC ────────────────────────────────────────────────────────────────── */
-.divider{height:1px;background:var(--border);margin:20px 0}
-.pill{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:99px;background:var(--s2);border:1px solid var(--border);color:var(--muted)}
-input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
+@media(max-width:400px){
+  .ssc-grid{grid-template-columns:1fr}
+  .kpi-row{grid-template-columns:1fr 1fr}
+}
 </style>
 </head>
 <body>
 
-<!-- ═══════════════════════════ LOGIN ════════════════════════════════════════ -->
+<!-- LOGIN -->
 <div id="login-screen">
-  <img src="https://flawlessperfumes.com/cdn/shop/files/Flawless_Logo.svg?v=1711183368&width=220"
-       class="login-logo" alt="Flawless" onerror="this.style.display='none'">
-  <div class="login-card">
-    <div class="login-eyebrow">Inventory Management</div>
-    <div class="login-title">Welcome back</div>
-    <div class="login-sub">Sign in to access the dashboard</div>
-    <div class="login-error" id="login-err"></div>
-    <div class="form-group">
-      <label class="form-label">Username</label>
-      <input class="form-input" id="l-user" type="text" placeholder="flawless" autocomplete="username">
+  <div class="login-wrap">
+    <img class="login-logo-img" src="https://flawlessperfumes.com/cdn/shop/files/Flawless_Logo.svg?v=1711183368&width=300" alt="Flawless"
+         onerror="this.style.display='none';document.querySelector('.login-logo-txt').style.display='block'">
+    <span class="login-logo-txt">Flawless</span>
+    <div class="login-card">
+      <div class="login-eyebrow">Inventory System</div>
+      <div class="login-title">Welcome back</div>
+      <div class="login-sub">Sign in to manage stock</div>
+      <div class="login-error" id="login-err"></div>
+      <div class="form-group">
+        <label class="form-label">Username</label>
+        <input class="form-input" id="l-user" type="text" placeholder="flawless" autocomplete="username">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input class="form-input" id="l-pass" type="password" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <button class="btn-login" id="login-btn">Sign In</button>
     </div>
-    <div class="form-group">
-      <label class="form-label">Password</label>
-      <input class="form-input" id="l-pass" type="password" placeholder="••••••••" autocomplete="current-password">
-    </div>
-    <button class="btn-login" id="login-btn" onclick="doLogin()">Sign In</button>
   </div>
 </div>
 
-<!-- ═══════════════════════════ APP ══════════════════════════════════════════ -->
+<!-- APP -->
 <div id="app">
-<div id="sidebar-overlay" onclick="closeSidebar()"></div>
+<div class="sb-overlay" id="sb-overlay" onclick="closeSb()"></div>
 
 <!-- SIDEBAR -->
 <aside class="sidebar" id="sidebar">
-  <div class="sidebar-logo-wrap">
-    <img src="https://flawlessperfumes.com/cdn/shop/files/Flawless_Logo.svg?v=1711183368&width=220"
-         class="sidebar-logo" alt="Flawless" onerror="this.style.display='none'">
-    <div class="sidebar-week" id="sb-week">Loading…</div>
+  <div class="sb-logo-wrap">
+    <img class="sb-logo" src="https://flawlessperfumes.com/cdn/shop/files/Flawless_Logo.svg?v=1711183368&width=300" alt="Flawless"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+    <span class="sb-logo-txt">Flawless</span>
+    <div class="sb-week" id="sb-week">Loading…</div>
   </div>
-  <nav class="sidebar-nav">
-    <div class="nav-section-label">Overview</div>
-    <button class="nav-item active" data-view="dash" onclick="navigate('dash')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-      Dashboard
+  <nav class="sb-nav">
+    <div class="sb-section">Overview</div>
+    <button class="nav-btn active" data-view="dash" onclick="nav('dash')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard
     </button>
-    <div class="nav-section-label">Manage</div>
-    <button class="nav-item" data-view="stock" onclick="navigate('stock')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 3v4M8 3v4"/><line x1="2" y1="11" x2="22" y2="11"/></svg>
-      Weekly Stock
+    <div class="sb-section">Manage</div>
+    <button class="nav-btn" data-view="stock" onclick="nav('stock')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><line x1="2" y1="11" x2="22" y2="11"/></svg>Weekly Stock
     </button>
-    <button class="nav-item" data-view="shops" onclick="navigate('shops')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-      Shops
+    <button class="nav-btn" data-view="shops" onclick="nav('shops')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Shops
     </button>
-    <button class="nav-item" data-view="workflow" onclick="navigate('workflow')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-      Workflow
-      <span class="nav-alert-dot" id="wf-dot" style="display:none"></span>
+    <button class="nav-btn" data-view="workflow" onclick="nav('workflow')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Workflow
+      <span class="nav-dot" id="wf-dot" style="display:none"></span>
     </button>
-    <div class="nav-section-label">Reporting</div>
-    <button class="nav-item" data-view="reports" onclick="navigate('reports')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-      Reports
+    <div class="sb-section">Reporting</div>
+    <button class="nav-btn" data-view="reports" onclick="nav('reports')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Reports
     </button>
-    <button class="nav-item" data-view="logs" onclick="navigate('logs')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-      Activity Log
+    <button class="nav-btn" data-view="logs" onclick="nav('logs')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Activity Log
     </button>
   </nav>
-  <div class="sidebar-footer">
-    <button class="btn-signout" onclick="doLogout()">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+  <div class="sb-footer">
+    <button class="btn-logout" onclick="doLogout()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
       Sign Out
     </button>
   </div>
 </aside>
 
-<!-- MAIN CONTENT -->
-<div class="main-content">
-
-  <!-- Mobile header -->
-  <header class="mobile-header">
-    <button class="mobile-menu-btn" onclick="openSidebar()">
+<!-- MAIN -->
+<div class="main">
+  <header class="mob-hd">
+    <button class="mob-menu" onclick="openSb()">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
     </button>
-    <img src="https://flawlessperfumes.com/cdn/shop/files/Flawless_Logo.svg?v=1711183368&width=220"
-         class="mobile-logo" alt="Flawless" onerror="this.style.display='none'">
-    <span class="mobile-week-badge" id="mob-week">W--</span>
+    <img class="mob-logo" src="https://flawlessperfumes.com/cdn/shop/files/Flawless_Logo.svg?v=1711183368&width=300" alt="Flawless"
+         onerror="this.style.display='none'">
+    <span class="mob-week" id="mob-week">W--</span>
   </header>
 
-  <!-- ── DASHBOARD ──────────────────────────────────────────────────────── -->
+  <!-- DASHBOARD -->
   <div class="view active" id="v-dash">
     <div class="view-hd">
-      <div class="view-title-wrap">
-        <div class="eyebrow">Overview</div>
-        <h1>Dashboard</h1>
-        <div class="subtitle" id="dash-range">Loading…</div>
-      </div>
+      <div><div class="eyebrow">Overview</div><h1>Dashboard</h1><div class="sub" id="dash-range">–</div></div>
       <div class="view-actions">
         <div class="week-nav">
-          <button class="week-btn" onclick="shiftWeek(-1)">‹</button>
-          <div class="week-label-wrap">
-            <strong id="dash-week-lbl">–</strong>
-            <small id="dash-range-sm">–</small>
-          </div>
-          <button class="week-btn" onclick="shiftWeek(1)">›</button>
+          <button class="wk-btn" onclick="shiftW(-1)">‹</button>
+          <div class="wk-lbl"><strong id="dash-wk">–</strong><small id="dash-rng">–</small></div>
+          <button class="wk-btn" onclick="shiftW(1)">›</button>
         </div>
-        <button class="btn btn-ghost btn-sm" onclick="navigate('stock')">Enter Stock →</button>
+        <button class="btn btn-ghost btn-sm" onclick="nav('stock')">Enter Stock →</button>
       </div>
     </div>
 
-    <!-- KPIs -->
-    <div class="kpi-row" id="kpi-row">
-      <div class="kpi-card kpi-gold"><div class="kpi-label">Shops Reporting</div><div class="kpi-value" id="kpi-reporting">—</div><div class="kpi-sub" id="kpi-reporting-sub">of — shops</div><div class="progress-bar"><div class="progress-fill" id="kpi-prog" style="width:0%"></div></div></div>
-      <div class="kpi-card kpi-blue"><div class="kpi-label">Total Delivered</div><div class="kpi-value" id="kpi-delivered">—</div><div class="kpi-sub">units this week</div></div>
-      <div class="kpi-card kpi-green"><div class="kpi-label">Total Sold</div><div class="kpi-value" id="kpi-sold">—</div><div class="kpi-sub">units this week</div></div>
-      <div class="kpi-card kpi-gold"><div class="kpi-label">In Stock</div><div class="kpi-value" id="kpi-remaining">—</div><div class="kpi-sub">units remaining</div></div>
-      <div class="kpi-card" id="kpi-alert-card"><div class="kpi-label">Alerts</div><div class="kpi-value" id="kpi-alerts">—</div><div class="kpi-sub" id="kpi-alerts-sub">low stock / over-sold</div></div>
+    <!-- Financial KPIs -->
+    <div class="section-lbl">Financial — This Week</div>
+    <div class="kpi-row" id="fin-kpis">
+      <div class="kpi k-green"><div class="kpi-label">Revenue</div><div class="kpi-val" id="k-rev">€—</div><div class="kpi-sub">units sold × price</div></div>
+      <div class="kpi k-amber"><div class="kpi-label">Cost of Sales</div><div class="kpi-val" id="k-cogs">€—</div><div class="kpi-sub">units sold × cost</div></div>
+      <div class="kpi k-gold"><div class="kpi-label">Gross Profit</div><div class="kpi-val" id="k-profit">€—</div><div class="kpi-sub" id="k-margin">margin —%</div></div>
+    </div>
+
+    <!-- Operational KPIs -->
+    <div class="section-lbl">Operational — This Week</div>
+    <div class="kpi-row">
+      <div class="kpi k-gold"><div class="kpi-label">Shops Reporting</div><div class="kpi-val" id="k-rep">—</div><div class="kpi-sub" id="k-rep-sub">of — shops</div><div class="kpi-bar"><div class="kpi-fill" id="k-prog" style="width:0%"></div></div></div>
+      <div class="kpi k-blue"><div class="kpi-label">Delivered</div><div class="kpi-val" id="k-del">—</div><div class="kpi-sub">units</div></div>
+      <div class="kpi k-green"><div class="kpi-label">Sold</div><div class="kpi-val" id="k-sold">—</div><div class="kpi-sub">units</div></div>
+      <div class="kpi k-gold"><div class="kpi-label">Remaining</div><div class="kpi-val" id="k-rem">—</div><div class="kpi-sub">in stock</div></div>
+      <div class="kpi" id="k-alert-card"><div class="kpi-label">Alerts</div><div class="kpi-val" id="k-alerts">—</div><div class="kpi-sub" id="k-alerts-sub">issues found</div></div>
     </div>
 
     <div class="dash-cols">
-      <!-- Left: shop status grid -->
       <div>
-        <div class="section-label">Shop Status This Week</div>
-        <div class="shops-status-grid" id="shops-status-grid">
-          <div class="empty-state"><div class="empty-icon">🏪</div><p>Loading shops…</p></div>
-        </div>
+        <div class="section-lbl">Shop Status</div>
+        <div class="ssc-grid" id="ssc-grid"><div class="empty"><div class="ei">🏪</div><p>Loading…</p></div></div>
 
-        <div class="section-label" style="margin-top:24px">Product Performance</div>
-        <div class="card" style="padding:0;overflow:hidden">
-          <table class="data-table" id="product-perf-table">
-            <thead><tr><th>Product</th><th>Category</th><th style="text-align:center">Delivered</th><th style="text-align:center">Sold</th><th style="text-align:center">Remaining</th></tr></thead>
-            <tbody id="product-perf-body"><tr><td colspan="5" class="empty-state" style="padding:24px;text-align:center;color:var(--muted)">No data this week</td></tr></tbody>
+        <div class="section-lbl">Product Performance</div>
+        <div class="card" style="overflow:hidden;padding:0">
+          <table class="data-tbl" id="prod-perf-tbl">
+            <thead><tr><th style="width:44px"></th><th>Product</th><th>Sold</th><th>Revenue</th><th>Stock Left</th></tr></thead>
+            <tbody id="prod-perf-body"><tr><td colspan="5" style="text-align:center;padding:20px;color:var(--muted)">No data this week</td></tr></tbody>
           </table>
         </div>
       </div>
 
-      <!-- Right: alerts -->
       <div>
-        <div class="section-label">Stock Alerts</div>
-        <div id="alerts-panel">
-          <div class="empty-state" style="padding:24px;color:var(--muted);font-size:13px;text-align:center">No alerts this week ✓</div>
-        </div>
+        <div class="section-lbl">Alerts</div>
+        <div id="alerts-panel"><div style="padding:14px 13px;background:var(--green-bg);border:1px solid rgba(78,168,106,.2);border-radius:var(--r-sm);font-size:12px;color:var(--green)">✓ All stock levels healthy</div></div>
 
-        <div class="section-label" style="margin-top:24px">Quick Actions</div>
-        <div class="card" style="display:flex;flex-direction:column;gap:10px">
-          <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="navigate('stock')">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <div class="section-lbl">Quick Actions</div>
+        <div class="card" style="padding:14px;display:flex;flex-direction:column;gap:9px">
+          <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="nav('stock')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Enter Weekly Stock
           </button>
-          <button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="downloadReportCurrent()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Download Excel Report
+          <button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="dlReport()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download Excel
           </button>
-          <a id="dash-wa-btn" href="#" target="_blank" class="btn btn-wa" style="width:100%;justify-content:center">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.025.507 3.934 1.399 5.604L0 24l6.545-1.379A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.898 0-3.675-.513-5.197-1.407l-.371-.22-3.886.818.835-3.778-.242-.387A9.936 9.936 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
-            Send WhatsApp Report
+          <a id="dash-wa" href="#" target="_blank" class="btn btn-wa" style="width:100%;justify-content:center">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.025.507 3.934 1.399 5.604L0 24l6.545-1.379A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.898 0-3.675-.513-5.197-1.407l-.371-.22-3.886.818.835-3.778-.242-.387A9.936 9.936 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+            WhatsApp Report
           </a>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ── WEEKLY STOCK ────────────────────────────────────────────────────── -->
+  <!-- STOCK -->
   <div class="view" id="v-stock">
     <div class="view-hd">
-      <div class="view-title-wrap">
-        <div class="eyebrow">Data Entry</div>
-        <h1>Weekly Stock</h1>
-        <div class="subtitle">Enter stock for each shop per week</div>
-      </div>
+      <div><div class="eyebrow">Data Entry</div><h1>Weekly Stock</h1><div class="sub">Auto-saves after each change</div></div>
       <div class="view-actions">
         <div class="week-nav">
-          <button class="week-btn" onclick="shiftWeek(-1)">‹</button>
-          <div class="week-label-wrap">
-            <strong id="stock-week-lbl">–</strong>
-            <small id="stock-range-sm">–</small>
-          </div>
-          <button class="week-btn" onclick="shiftWeek(1)">›</button>
+          <button class="wk-btn" onclick="shiftW(-1)">‹</button>
+          <div class="wk-lbl"><strong id="stk-wk">–</strong><small id="stk-rng">–</small></div>
+          <button class="wk-btn" onclick="shiftW(1)">›</button>
         </div>
       </div>
     </div>
-    <div class="shop-accordion" id="shop-accordion">
-      <div class="empty-state"><div class="empty-icon">🏪</div><p>Loading shops…</p></div>
-    </div>
+    <div class="acc-list" id="acc-list"><div class="empty"><div class="ei">🏪</div><p>Loading…</p></div></div>
   </div>
 
-  <!-- ── SHOPS ──────────────────────────────────────────────────────────── -->
+  <!-- SHOPS -->
   <div class="view" id="v-shops">
     <div class="view-hd">
-      <div class="view-title-wrap">
-        <div class="eyebrow">Management</div>
-        <h1>Shops</h1>
-        <div class="subtitle">Manage partner shops and contact details</div>
-      </div>
+      <div><div class="eyebrow">Management</div><h1>Shops</h1><div class="sub">Contact details auto-save on change</div></div>
     </div>
-    <div class="add-shop-row">
-      <input class="add-shop-input" id="add-shop-input" type="text" placeholder="New shop name…" onkeydown="if(event.key==='Enter')addShop()">
+    <div class="add-row">
+      <input class="add-inp" id="add-shop-inp" type="text" placeholder="Add new shop name…" onkeydown="if(event.key==='Enter')addShop()">
       <button class="btn btn-primary" onclick="addShop()">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        Add Shop
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add
       </button>
     </div>
-    <div class="shops-grid" id="shops-grid">
-      <div class="empty-state"><div class="empty-icon">🏪</div><p>Loading…</p></div>
-    </div>
+    <div class="shops-grid" id="shops-grid"></div>
   </div>
 
-  <!-- ── WORKFLOW ───────────────────────────────────────────────────────── -->
+  <!-- WORKFLOW -->
   <div class="view" id="v-workflow">
     <div class="view-hd">
-      <div class="view-title-wrap">
-        <div class="eyebrow">Process</div>
-        <h1>Weekly Workflow</h1>
-        <div class="subtitle">Track every step of the inventory process</div>
-      </div>
+      <div><div class="eyebrow">Process</div><h1>Weekly Workflow</h1><div class="sub">Auto-computed from data · toggle manual items</div></div>
       <div class="view-actions">
         <div class="week-nav">
-          <button class="week-btn" onclick="shiftWeek(-1)">‹</button>
-          <div class="week-label-wrap">
-            <strong id="wf-week-lbl">–</strong>
-            <small id="wf-range-sm">–</small>
-          </div>
-          <button class="week-btn" onclick="shiftWeek(1)">›</button>
+          <button class="wk-btn" onclick="shiftW(-1)">‹</button>
+          <div class="wk-lbl"><strong id="wf-wk">–</strong><small id="wf-rng">–</small></div>
+          <button class="wk-btn" onclick="shiftW(1)">›</button>
         </div>
-        <button class="btn btn-ghost btn-sm" onclick="resetManualChecks()">Reset Manual</button>
+        <button class="btn btn-ghost btn-sm" onclick="resetManual()">Reset Manual</button>
       </div>
     </div>
-    <!-- Summary bar -->
-    <div class="wf-summary-bar">
-      <div>
-        <div class="wf-pct" id="wf-pct">0%</div>
-        <div class="wf-pct-label">workflow complete</div>
-      </div>
-      <div class="wf-pct-bar"><div class="wf-pct-fill" id="wf-pct-fill" style="width:0%"></div></div>
-    </div>
-    <div id="workflow-content">
-      <div class="empty-state"><div class="empty-icon">📋</div><p>Loading…</p></div>
-    </div>
+    <div class="wf-bar"><div class="wf-pct" id="wf-pct">0%</div><div style="flex:1"><div class="wf-pct-lbl" id="wf-pct-lbl">workflow complete</div><div class="wf-bar-track"><div class="wf-bar-fill" id="wf-fill" style="width:0%"></div></div></div></div>
+    <div id="wf-content"><div class="empty"><div class="ei">📋</div><p>Loading…</p></div></div>
   </div>
 
-  <!-- ── REPORTS ────────────────────────────────────────────────────────── -->
+  <!-- REPORTS -->
   <div class="view" id="v-reports">
     <div class="view-hd">
-      <div class="view-title-wrap">
-        <div class="eyebrow">Export & Share</div>
-        <h1>Reports</h1>
-        <div class="subtitle">Download and send weekly inventory reports</div>
-      </div>
+      <div><div class="eyebrow">Export & Share</div><h1>Reports</h1><div class="sub">Download Excel · Email · WhatsApp</div></div>
     </div>
     <div style="margin-bottom:20px">
-      <div class="section-label">Select Week</div>
-      <select class="report-week-sel" id="report-week-sel" style="max-width:360px"></select>
+      <div class="section-lbl">Select Week</div>
+      <select class="rpt-week-sel" id="rpt-week-sel"></select>
     </div>
-    <div class="reports-grid">
-      <!-- Excel -->
-      <div class="report-card">
-        <div class="report-card-icon">📊</div>
-        <div class="report-card-title">Excel Report</div>
-        <div class="report-card-desc">Download a formatted Excel spreadsheet with all stock data, sales figures, and status for the selected week.</div>
-        <button class="btn btn-primary" onclick="downloadReport()">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    <div class="rpt-grid">
+      <div class="rpt-card">
+        <div class="rpt-icon">📊</div>
+        <div class="rpt-title">Excel Report</div>
+        <div class="rpt-desc">Full stock data with revenue, cost of sales, and gross profit per product.</div>
+        <button class="btn btn-primary" onclick="dlReport()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Download Excel
         </button>
       </div>
-      <!-- Email -->
-      <div class="report-card">
-        <div class="report-card-icon">✉️</div>
-        <div class="report-card-title">Email Report</div>
-        <div class="report-card-desc">Send the Excel report via email to <strong style="color:var(--gold-d)">flawlessperfumesmanagement@gmail.com</strong>. Requires EMAIL_USER / EMAIL_PASS env vars.</div>
-        <button class="btn btn-ghost" id="email-btn" onclick="sendEmailReport()">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-          Send Email Report
-        </button>
+      <div class="rpt-card">
+        <div class="rpt-icon">✉️</div>
+        <div class="rpt-title">Email Report</div>
+        <div class="rpt-desc">Sends Excel to <strong style="color:var(--gold-d)">flawlessperfumesmanagement@gmail.com</strong>. Needs EMAIL_USER env var.</div>
+        <button class="btn btn-ghost" id="email-btn" onclick="sendEmail()">Send Email</button>
       </div>
-      <!-- WhatsApp -->
-      <div class="report-card">
-        <div class="report-card-icon">💬</div>
-        <div class="report-card-title">WhatsApp Report</div>
-        <div class="report-card-desc">Open a pre-filled WhatsApp message for <strong style="color:var(--green)">+33 7 58 03 37 74</strong> with the full weekly stock summary.</div>
-        <a id="report-wa-btn" href="#" target="_blank" class="btn btn-wa" onclick="buildWAReport(event)">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.025.507 3.934 1.399 5.604L0 24l6.545-1.379A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.898 0-3.675-.513-5.197-1.407l-.371-.22-3.886.818.835-3.778-.242-.387A9.936 9.936 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
-          Open WhatsApp
-        </a>
+      <div class="rpt-card">
+        <div class="rpt-icon">💬</div>
+        <div class="rpt-title">WhatsApp Report</div>
+        <div class="rpt-desc">Pre-filled message to <strong style="color:var(--green)">+33 7 58 03 37 74</strong> with full weekly summary.</div>
+        <a id="rpt-wa" href="#" target="_blank" class="btn btn-wa" onclick="buildWALink(event)">Open WhatsApp</a>
       </div>
-      <!-- Auto schedule note -->
-      <div class="report-card" style="border-color:var(--gold-dim);border-style:dashed">
-        <div class="report-card-icon">⏰</div>
-        <div class="report-card-title">Auto Report (Cron)</div>
-        <div class="report-card-desc">Email reports are sent automatically every Sunday at 9:00 AM via the Vercel cron job (<code style="font-size:11px;color:var(--gold-d)">/api/cron</code>). No action needed.</div>
-        <span class="badge badge-ok" style="width:fit-content">Active on Vercel</span>
+      <div class="rpt-card" style="border-color:var(--gold-dim);border-style:dashed">
+        <div class="rpt-icon">⏰</div>
+        <div class="rpt-title">Auto Schedule</div>
+        <div class="rpt-desc">Email sends automatically every Sunday at 9 AM via Vercel cron (<code style="color:var(--gold-d);font-size:11px">/api/cron</code>).</div>
+        <span class="badge b-ok">Active on Vercel</span>
       </div>
     </div>
   </div>
 
-  <!-- ── ACTIVITY LOG ───────────────────────────────────────────────────── -->
+  <!-- LOGS -->
   <div class="view" id="v-logs">
     <div class="view-hd">
-      <div class="view-title-wrap">
-        <div class="eyebrow">Audit Trail</div>
-        <h1>Activity Log</h1>
-        <div class="subtitle">All system actions with timestamps</div>
-      </div>
-      <div class="view-actions">
-        <button class="btn btn-ghost btn-sm" onclick="loadLogs(true)">Refresh</button>
-      </div>
+      <div><div class="eyebrow">Audit Trail</div><h1>Activity Log</h1><div class="sub">Every action timestamped</div></div>
+      <div class="view-actions"><button class="btn btn-ghost btn-sm" onclick="loadLogs(true)">Refresh</button></div>
     </div>
-    <div class="log-list" id="log-list">
-      <div class="empty-state"><div class="empty-icon">📋</div><p>Loading…</p></div>
-    </div>
+    <div class="log-list" id="log-list"></div>
   </div>
 
-</div><!-- end .main-content -->
+</div><!-- /main -->
 
-<!-- Mobile bottom nav -->
-<nav class="bottom-nav">
-  <button class="bnav-btn active" data-view="dash" onclick="navigate('dash')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-    Dash
-  </button>
-  <button class="bnav-btn" data-view="stock" onclick="navigate('stock')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><line x1="2" y1="11" x2="22" y2="11"/></svg>
-    Stock
-  </button>
-  <button class="bnav-btn" data-view="shops" onclick="navigate('shops')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-    Shops
-  </button>
-  <button class="bnav-btn" data-view="workflow" onclick="navigate('workflow')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-    Workflow
-  </button>
-  <button class="bnav-btn" data-view="reports" onclick="navigate('reports')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-    Reports
-  </button>
+<!-- MOBILE BOTTOM NAV -->
+<nav class="bot-nav">
+  <button class="bn-btn active" data-view="dash" onclick="nav('dash')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dash</button>
+  <button class="bn-btn" data-view="stock" onclick="nav('stock')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><line x1="2" y1="11" x2="22" y2="11"/></svg>Stock</button>
+  <button class="bn-btn" data-view="shops" onclick="nav('shops')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Shops</button>
+  <button class="bn-btn" data-view="workflow" onclick="nav('workflow')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Workflow</button>
+  <button class="bn-btn" data-view="reports" onclick="nav('reports')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Reports</button>
 </nav>
-
-</div><!-- end #app -->
-
+</div><!-- /app -->
 <div id="toasts"></div>
 
 <script>
-// ═══════════════════════════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────────────────────
 // STATE
-// ═══════════════════════════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────────────────────
 const S = {
-  token:    localStorage.getItem('fl_token') || '',
-  products: [],   // [{name, category}]
-  shops:    [],   // string[]
-  contacts: {},   // {shopName: {contact, email}}
-  week:     '',
-  weeks:    [],   // recent week strings
-  stock:    {},   // stock[shop][product] = {initialQty,soldQty,topUp,savedAt}
-  logs:     [],
-  dash:     null,
-  view:     'dash',
-  expanded: new Set(),
-  manual:   {},   // manual workflow toggles (localStorage)
+  token:    localStorage.getItem('fl_tok') || '',
+  products: [], shops: [], contacts: {}, stock: {}, logs: [], dash: null,
+  week: '', view: 'dash', expanded: new Set(), manual: {},
 };
+const WA = '33758033774';
+const LOW = 3;
+const saveTimers = {};
 
-const WA_NUMBER = '33758033774';
-const LOW_STOCK = 3;
-
-// ═══════════════════════════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────────────────────
 // UTILS
-// ═══════════════════════════════════════════════════════════════════════════
-function esc(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-}
-
-function fmtDate(iso) {
-  if (!iso) return '—';
-  const d = new Date(iso);
-  return d.toLocaleDateString('en-GB',{day:'numeric',month:'short'}) + ' ' + d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
-}
+// ─────────────────────────────────────────────────────────────────────────────
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+const fmtDate = iso => { if(!iso) return '—'; const d=new Date(iso); return d.toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}); };
+const fmtEur = n => `€${Number(n).toFixed(0)}`;
+const sid = s => s.replace(/[^a-z0-9]/gi,'_');
 
 function getWeekId(date) {
-  const d = new Date(date || Date.now());
-  d.setHours(0,0,0,0);
-  d.setDate(d.getDate() + 3 - (d.getDay()+6)%7);
-  const w1 = new Date(d.getFullYear(),0,4);
-  const n = 1 + Math.round(((d-w1)/86400000 - 3 + (w1.getDay()+6)%7)/7);
+  const d = new Date(date||Date.now()); d.setHours(0,0,0,0);
+  d.setDate(d.getDate()+3-(d.getDay()+6)%7);
+  const w1=new Date(d.getFullYear(),0,4);
+  const n=1+Math.round(((d-w1)/86400000-3+(w1.getDay()+6)%7)/7);
   return `${d.getFullYear()}-W${String(n).padStart(2,'0')}`;
 }
-
-function weekRange(weekId) {
-  const [yr,wn] = weekId.split('-W').map(Number);
-  const w1s = new Date(yr,0,4);
-  w1s.setDate(w1s.getDate() - (w1s.getDay()+6)%7);
-  const start = new Date(w1s);
-  start.setDate(start.getDate() + (wn-1)*7);
-  const end = new Date(start);
-  end.setDate(start.getDate()+6);
-  const fmt = d => d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
-  return `${fmt(start)} – ${fmt(end)}`;
+function weekRange(wk) {
+  const [yr,wn]=wk.split('-W').map(Number);
+  const w1s=new Date(yr,0,4);
+  w1s.setDate(w1s.getDate()-(w1s.getDay()+6)%7);
+  const start=new Date(w1s); start.setDate(start.getDate()+(wn-1)*7);
+  const end=new Date(start); end.setDate(start.getDate()+6);
+  const f=d=>d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+  return `${f(start)} – ${f(end)}`;
 }
-
-function offsetWeek(week, delta) {
-  const [yr,wn] = week.split('-W').map(Number);
-  const d = new Date(yr,0,4);
-  d.setDate(d.getDate() - (d.getDay()+6)%7 + (wn-1)*7 + delta*7);
-  return getWeekId(d);
+function offsetWk(wk,d) {
+  const [yr,wn]=wk.split('-W').map(Number);
+  const dt=new Date(yr,0,4);
+  dt.setDate(dt.getDate()-(dt.getDay()+6)%7+(wn-1)*7+d*7);
+  return getWeekId(dt);
 }
-
-function getRecentWeeks(n=16) {
-  const cur = getWeekId(); const list = [];
-  for (let i = 0; i < n; i++) list.push(offsetWeek(cur, -i));
-  return list;
-}
-
-function normalizeEntry(e) {
-  if (!e) return {initialQty:0,soldQty:0,topUp:0};
-  if ('provided' in e) return {initialQty:e.provided||0,soldQty:e.sold||0,topUp:e.topUp||0};
+function recentWeeks(n=16) { const w=getWeekId(),r=[]; for(let i=0;i<n;i++) r.push(offsetWk(w,-i)); return r; }
+function norm(e) {
+  if(!e) return {initialQty:0,soldQty:0,topUp:0};
+  if('provided' in e) return {initialQty:e.provided||0,soldQty:e.sold||0,topUp:e.topUp||0};
   return {initialQty:e.initialQty||0,soldQty:e.soldQty||0,topUp:e.topUp||0};
 }
-function calcStock(e) { const n=normalizeEntry(e); return n.initialQty+n.topUp-n.soldQty; }
-function hasData(e) { const n=normalizeEntry(e); return n.initialQty>0||n.soldQty>0||n.topUp>0; }
+function calcRem(e) { const n=norm(e); return n.initialQty+n.topUp-n.soldQty; }
+function hasD(e) { const n=norm(e); return n.initialQty>0||n.soldQty>0||n.topUp>0; }
+function loadManual() { try { S.manual=JSON.parse(localStorage.getItem(`fl_m_${S.week}`)||'{}'); } catch { S.manual={}; } }
+function saveManual() { localStorage.setItem(`fl_m_${S.week}`,JSON.stringify(S.manual)); }
+function resetManual() { S.manual={}; saveManual(); renderWF(); toast('Manual checks reset','inf'); }
 
-function shopId(s) { return s.replace(/[^a-z0-9]/gi,'_'); }
+const ICONS = ['💈','✂️','🏬','🏪','🏢','💆','🛍️','🌿','✨','🏋️','💊','☕'];
+const shopIcon = i => ICONS[i % ICONS.length];
 
-function loadManual() {
-  try { S.manual = JSON.parse(localStorage.getItem(`fl_manual_${S.week}`) || '{}'); } catch { S.manual = {}; }
-}
-function saveManual() { localStorage.setItem(`fl_manual_${S.week}`, JSON.stringify(S.manual)); }
-function resetManualChecks() { S.manual = {}; saveManual(); renderWorkflow(); toast('Manual checks reset','inf'); }
-
-// ═══════════════════════════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────────────────────
 // API
-// ═══════════════════════════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────────────────────
 async function api(path, opts={}) {
-  const res = await fetch(path, {
-    headers: {'Content-Type':'application/json','Authorization':`Bearer ${S.token}`},
-    ...opts,
-  });
-  if (res.status === 401) { doLogout(); return {}; }
-  return res.json().catch(() => ({}));
+  try {
+    const r = await fetch(path, { headers:{'Content-Type':'application/json','Authorization':`Bearer ${S.token}`}, ...opts });
+    if (r.status===401) { doLogout(); return {}; }
+    return r.json().catch(()=>({}));
+  } catch { return {}; }
 }
-async function apiPost(path, body) { return api(path, {method:'POST',body:JSON.stringify(body)}); }
-async function apiDel(path)        { return api(path, {method:'DELETE'}); }
+const apiPost = (p,b) => api(p,{method:'POST',body:JSON.stringify(b)});
+const apiDel  = p     => api(p,{method:'DELETE'});
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────────────────────
 // AUTH
-// ═══════════════════════════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────────────────────
+document.getElementById('login-btn').onclick = doLogin;
+document.getElementById('l-pass').onkeydown  = e => { if(e.key==='Enter') doLogin(); };
+document.getElementById('l-user').onkeydown  = e => { if(e.key==='Enter') document.getElementById('l-pass').focus(); };
+
 async function doLogin() {
-  const btn=document.getElementById('login-btn');
-  const err=document.getElementById('login-err');
-  const u=document.getElementById('l-user').value.trim();
-  const p=document.getElementById('l-pass').value;
+  const btn=document.getElementById('login-btn'), err=document.getElementById('login-err');
+  const u=document.getElementById('l-user').value.trim(), p=document.getElementById('l-pass').value;
   err.style.display='none';
-  if (!u||!p) { err.textContent='Enter username and password'; err.style.display='block'; return; }
+  if(!u||!p){err.textContent='Enter username and password';err.style.display='block';return;}
   btn.disabled=true; btn.textContent='Signing in…';
-  const res = await fetch('/api/auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,password:p})});
-  const data = await res.json();
-  if (data.token) {
-    S.token = data.token;
-    localStorage.setItem('fl_token', S.token);
-    document.getElementById('login-screen').style.display='none';
-    document.getElementById('app').style.display='block';
-    await initApp();
-  } else {
-    err.textContent = data.error || 'Login failed';
-    err.style.display='block';
-  }
+  const r=await fetch('/api/auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,password:p})});
+  const d=await r.json();
+  if(d.token){ S.token=d.token; localStorage.setItem('fl_tok',S.token); boot(); }
+  else{ err.textContent=d.error||'Login failed'; err.style.display='block'; }
   btn.disabled=false; btn.textContent='Sign In';
 }
-
 function doLogout() {
-  S.token=''; localStorage.removeItem('fl_token');
+  S.token=''; localStorage.removeItem('fl_tok');
   document.getElementById('app').style.display='none';
   document.getElementById('login-screen').style.display='flex';
   document.getElementById('l-pass').value='';
 }
 
-document.getElementById('l-pass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
-document.getElementById('l-user').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('l-pass').focus(); });
-
-// ═══════════════════════════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────────────────────
 // NAVIGATION
-// ═══════════════════════════════════════════════════════════════════════════
-function navigate(v) {
-  S.view = v;
-  closeSidebar();
-  document.querySelectorAll('.view').forEach(el => el.classList.toggle('active', el.id === `v-${v}`));
-  document.querySelectorAll('.nav-item').forEach(el => el.classList.toggle('active', el.dataset.view === v));
-  document.querySelectorAll('.bnav-btn').forEach(el => el.classList.toggle('active', el.dataset.view === v));
-  if (v==='dash')     loadDashboard();
-  if (v==='stock')    renderStock();
-  if (v==='shops')    renderShops();
-  if (v==='workflow') { loadManual(); renderWorkflow(); }
-  if (v==='reports')  renderReports();
-  if (v==='logs')     loadLogs();
+// ─────────────────────────────────────────────────────────────────────────────
+function nav(v) {
+  S.view=v; closeSb();
+  document.querySelectorAll('.view').forEach(el=>el.classList.toggle('active',el.id===`v-${v}`));
+  document.querySelectorAll('.nav-btn').forEach(el=>el.classList.toggle('active',el.dataset.view===v));
+  document.querySelectorAll('.bn-btn').forEach(el=>el.classList.toggle('active',el.dataset.view===v));
+  if(v==='dash')    loadDash();
+  if(v==='stock')   renderStock();
+  if(v==='shops')   renderShops();
+  if(v==='workflow'){loadManual();renderWF();}
+  if(v==='reports') renderReports();
+  if(v==='logs')    loadLogs();
 }
+function openSb()  { document.getElementById('sidebar').classList.add('open'); document.getElementById('sb-overlay').classList.add('show'); }
+function closeSb() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sb-overlay').classList.remove('show'); }
 
-function openSidebar()  { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebar-overlay').classList.add('show'); }
-function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-overlay').classList.remove('show'); }
-
-// ═══════════════════════════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────────────────────
 // WEEK
-// ═══════════════════════════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────────────────────
 function setWeek(w) {
-  S.week = w;
-  S.weeks = getRecentWeeks(16);
-  const rng = weekRange(w);
-  document.getElementById('sb-week').innerHTML = `Week <strong>${w}</strong>`;
-  document.getElementById('mob-week').textContent = w;
-  ['dash-week-lbl','stock-week-lbl','wf-week-lbl'].forEach(id => { const el=document.getElementById(id); if(el) el.textContent=w; });
-  ['dash-range-sm','stock-range-sm','wf-range-sm'].forEach(id => { const el=document.getElementById(id); if(el) el.textContent=rng; });
-  const rsel=document.getElementById('report-week-sel');
-  if(rsel) rsel.innerHTML = S.weeks.map(wk=>`<option value="${esc(wk)}"${wk===w?' selected':''}>${wk} — ${weekRange(wk)}</option>`).join('');
+  S.week=w; const rng=weekRange(w);
+  document.getElementById('sb-week').innerHTML=`Week <strong>${w}</strong>`;
+  document.getElementById('mob-week').textContent=w;
+  [['dash-wk',w],['dash-rng',rng],['stk-wk',w],['stk-rng',rng],['wf-wk',w],['wf-rng',rng]].forEach(([id,v])=>{ const el=document.getElementById(id); if(el) el.textContent=v; });
+  const sel=document.getElementById('rpt-week-sel');
+  if(sel) sel.innerHTML=recentWeeks(16).map(wk=>`<option value="${wk}"${wk===w?' selected':''}>${wk} — ${weekRange(wk)}</option>`).join('');
   loadManual();
 }
-
-async function shiftWeek(delta) {
-  const newW = offsetWeek(S.week, delta);
-  setWeek(newW);
-  // reload data for new week
-  const raw = await api(`/api/stock/${newW}`);
-  S.stock = raw || {};
-  if (S.view==='dash') loadDashboard();
-  if (S.view==='stock') renderStock();
-  if (S.view==='workflow') renderWorkflow();
+async function shiftW(d) {
+  const nw=offsetWk(S.week,d); setWeek(nw);
+  const raw=await api(`/api/stock/${nw}`);
+  S.stock=raw||{};
+  if(S.view==='dash') loadDash();
+  if(S.view==='stock') renderStock();
+  if(S.view==='workflow') renderWF();
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// INIT
-// ═══════════════════════════════════════════════════════════════════════════
-async function initApp() {
-  // Load current week
-  const weekData = await api('/api/week');
-  setWeek(weekData.week || getWeekId());
-
-  // Parallel load
-  const [products, shops, contacts, stock] = await Promise.all([
-    api('/api/products'),
-    api('/api/shops'),
-    api('/api/contacts'),
-    api(`/api/stock/${S.week}`),
-  ]);
-
-  S.products  = Array.isArray(products) ? products : [];
-  S.shops     = Array.isArray(shops)    ? shops    : [];
-  S.contacts  = contacts || {};
-  S.stock     = stock || {};
-
-  await loadDashboard();
-  navigate('dash');
+// ─────────────────────────────────────────────────────────────────────────────
+// BOOT
+// ─────────────────────────────────────────────────────────────────────────────
+async function boot() {
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app').style.display='block';
+  const wkD=await api('/api/week'); setWeek(wkD.week||getWeekId());
+  const [prods,shops,contacts,stock]=await Promise.all([api('/api/products'),api('/api/shops'),api('/api/contacts'),api(`/api/stock/${S.week}`)]);
+  S.products=Array.isArray(prods)?prods:[];
+  S.shops=Array.isArray(shops)?shops:[];
+  S.contacts=contacts||{};
+  S.stock=stock||{};
+  loadDash(); nav('dash');
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────────────────────
 // DASHBOARD
-// ═══════════════════════════════════════════════════════════════════════════
-async function loadDashboard() {
-  const dash = await api(`/api/dashboard/${S.week}`);
-  if (!dash || !dash.week) return;
-  S.dash = dash;
-
-  // KPIs
-  const alertCount = (dash.lowStockCount||0) + (dash.overSoldCount||0);
-  const pct = dash.totalShops > 0 ? Math.round((dash.shopsReporting/dash.totalShops)*100) : 0;
-
-  document.getElementById('kpi-reporting').textContent    = dash.shopsReporting;
-  document.getElementById('kpi-reporting-sub').textContent= `of ${dash.totalShops} shops`;
-  document.getElementById('kpi-prog').style.width         = pct + '%';
-  document.getElementById('kpi-delivered').textContent    = dash.totalDelivered;
-  document.getElementById('kpi-sold').textContent         = dash.totalSold;
-  document.getElementById('kpi-remaining').textContent    = dash.totalRemaining;
-  document.getElementById('kpi-alerts').textContent       = alertCount;
-  document.getElementById('kpi-alerts-sub').textContent   = `${dash.lowStockCount||0} low · ${dash.overSoldCount||0} over-sold`;
-  const ac = document.getElementById('kpi-alert-card');
-  ac.className = 'kpi-card ' + (dash.overSoldCount>0 ? 'kpi-red' : dash.lowStockCount>0 ? 'kpi-amber' : 'kpi-green');
-
+// ─────────────────────────────────────────────────────────────────────────────
+async function loadDash() {
+  const d=await api(`/api/dashboard/${S.week}`);
+  if(!d||!d.week) return;
+  S.dash=d;
+  // Financial
+  document.getElementById('k-rev').textContent    = fmtEur(d.totalRevenue||0);
+  document.getElementById('k-cogs').textContent   = fmtEur(d.totalCOGS||0);
+  document.getElementById('k-profit').textContent = fmtEur(d.grossProfit||0);
+  document.getElementById('k-margin').textContent = `margin ${d.margin||0}%`;
+  // Operational
+  const pct=d.totalShops>0?Math.round(d.shopsReporting/d.totalShops*100):0;
+  document.getElementById('k-rep').textContent     = d.shopsReporting;
+  document.getElementById('k-rep-sub').textContent = `of ${d.totalShops} shops`;
+  document.getElementById('k-prog').style.width    = pct+'%';
+  document.getElementById('k-del').textContent     = d.totalDelivered;
+  document.getElementById('k-sold').textContent    = d.totalSold;
+  document.getElementById('k-rem').textContent     = d.totalRemaining;
+  const alerts=(d.lowStockCount||0)+(d.overSoldCount||0);
+  document.getElementById('k-alerts').textContent     = alerts;
+  document.getElementById('k-alerts-sub').textContent = `${d.lowStockCount||0} low · ${d.overSoldCount||0} over-sold`;
+  const ac=document.getElementById('k-alert-card');
+  ac.className='kpi '+(d.overSoldCount>0?'k-red':d.lowStockCount>0?'k-amber':'k-green');
   // Shop status grid
-  const grid = document.getElementById('shops-status-grid');
-  if (!dash.shopStatuses || !dash.shopStatuses.length) {
-    grid.innerHTML = '<div class="empty-state" style="padding:24px;font-size:13px;color:var(--muted)">No shops configured</div>';
-  } else {
-    grid.innerHTML = dash.shopStatuses.map(s => {
-      const cls = !s.hasData ? 'ssc-empty' : s.ok ? 'ssc-ok' : 'ssc-err';
-      const badge = !s.hasData ? '<span class="badge badge-empty">Not entered</span>'
-        : !s.ok ? '<span class="badge badge-err">⚠ Alert</span>'
-        : '<span class="badge badge-ok">✓ Good</span>';
-      const last = s.lastSaved ? fmtDate(s.lastSaved) : 'Never';
-      return `<div class="shop-status-card ${cls}" onclick="navigate('stock')" title="Click to enter stock">
-        <div class="ssc-name">${esc(s.shop)}</div>
-        <div class="ssc-meta">
-          <div class="ssc-stat">Sold: <strong>${s.sold}</strong> · Remaining: <strong>${s.remaining}</strong></div>
-          ${badge}
-        </div>
-        <div style="font-size:10px;color:var(--dim);margin-top:6px">Last: ${last}</div>
-      </div>`;
-    }).join('');
-  }
-
-  // Product performance table
-  const body = document.getElementById('product-perf-body');
-  const entries = Object.entries(dash.productSummary || {});
-  if (!entries.length) {
-    body.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--muted)">No data this week</td></tr>';
-  } else {
-    body.innerHTML = entries.map(([name, d]) =>
-      `<tr>
-        <td><span style="font-size:13px;color:var(--cream)">${esc(name)}</span></td>
-        <td><span class="cat-pill">${esc(d.category)}</span></td>
-        <td><span class="num">${d.delivered}</span></td>
-        <td><span class="num">${d.sold}</span></td>
-        <td><span class="num" style="color:${d.remaining<0?'var(--red)':d.remaining<=LOW_STOCK?'var(--amber)':'var(--green)'}">${d.remaining}</span></td>
-      </tr>`
-    ).join('');
-  }
-
-  // Alerts panel
-  const ap = document.getElementById('alerts-panel');
-  const alertItems = [];
-  (dash.overSold||[]).forEach(a => alertItems.push({type:'err',icon:'🔴',text:`<strong>${esc(a.product)}</strong> — ${esc(a.shop)}`,sub:`Over-sold by ${Math.abs(a.remaining)} units`}));
-  (dash.lowStock||[]).forEach(a => alertItems.push({type:'warn',icon:'⚠️',text:`<strong>${esc(a.product)}</strong> — ${esc(a.shop)}`,sub:`Only ${a.remaining} units remaining`}));
-  if (!alertItems.length) {
-    ap.innerHTML = '<div style="padding:16px 14px;background:var(--green-bg);border:1px solid rgba(90,174,122,.2);border-radius:var(--r-sm);font-size:12px;color:var(--green)">✓ All stock levels are healthy this week</div>';
-  } else {
-    ap.innerHTML = alertItems.map(a =>
-      `<div class="alert-item alert-${a.type}">
-        <span style="font-size:16px">${a.icon}</span>
-        <div><div class="alert-text">${a.text}</div><div class="alert-shop">${a.sub}</div></div>
-      </div>`
-    ).join('');
-  }
-
-  // Update workflow dot
-  if (dash.overSoldCount > 0 || dash.lowStockCount > 0) {
-    document.getElementById('wf-dot').style.display = 'block';
-  } else {
-    document.getElementById('wf-dot').style.display = 'none';
-  }
-
+  const g=document.getElementById('ssc-grid');
+  if(!d.shopStatuses?.length){ g.innerHTML='<div class="empty" style="padding:20px"><p>No shops</p></div>'; }
+  else g.innerHTML=d.shopStatuses.map(s=>{
+    const cls=!s.hasData?'empty':s.ok?'ok':d.overSold?.some(o=>o.shop===s.shop)?'err':'warn';
+    const badge=!s.hasData?'<span class="badge b-empty">Not entered</span>':!s.ok?'<span class="badge b-warn">⚠ Alert</span>':'<span class="badge b-ok">✓ Good</span>';
+    return `<div class="ssc ${cls}" onclick="nav('stock')" title="Click to enter stock">
+      <div class="ssc-name">${esc(s.shop)}</div>
+      <div class="ssc-row"><div class="ssc-stat">Sold <strong>${s.sold}</strong> · Left <strong>${s.remaining}</strong></div>${badge}</div>
+      <div class="ssc-last">Updated: ${fmtDate(s.lastSaved)}</div>
+    </div>`;
+  }).join('');
+  // Product table
+  const entries=Object.entries(d.productSummary||{});
+  const pb=document.getElementById('prod-perf-body');
+  if(!entries.length){ pb.innerHTML='<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--muted)">No data this week</td></tr>'; }
+  else pb.innerHTML=entries.map(([name,pd])=>{
+    const p=S.products.find(x=>x.name===name);
+    const imgH=p?.image?`<img src="${esc(p.image)}" class="prod-img-sm" alt="" onerror="this.style.display='none'">`:'<div class="prod-img-fallback">🫙</div>';
+    const remCls=pd.remaining<0?'color:var(--red)':pd.remaining<=LOW?'color:var(--amber)':'color:var(--green)';
+    return `<tr><td>${imgH}</td><td style="font-size:13px;color:var(--cream)">${esc(name)}</td>
+      <td style="text-align:center"><span class="num-big">${pd.sold}</span></td>
+      <td style="text-align:center"><span class="num-big" style="color:var(--green)">${fmtEur(pd.revenue)}</span></td>
+      <td style="text-align:center"><span class="num-big" style="${remCls}">${pd.remaining}</span></td></tr>`;
+  }).join('');
+  // Alerts
+  const ap=document.getElementById('alerts-panel');
+  const items=[...(d.overSold||[]).map(a=>({cls:'a-err',icon:'🔴',txt:`<strong>${esc(a.product)}</strong>`,sub:`${esc(a.shop)} — over-sold by ${Math.abs(a.remaining)}`})),
+               ...(d.lowStock||[]).map(a=>({cls:'a-warn',icon:'⚠️',txt:`<strong>${esc(a.product)}</strong>`,sub:`${esc(a.shop)} — ${a.remaining} left`}))];
+  ap.innerHTML=!items.length
+    ?'<div style="padding:12px 13px;background:var(--green-bg);border:1px solid rgba(78,168,106,.2);border-radius:var(--r-sm);font-size:12px;color:var(--green)">✓ All stock levels healthy</div>'
+    :items.map(a=>`<div class="alert-item ${a.cls}"><span class="alert-icon">${a.icon}</span><div><div class="alert-text">${a.txt}</div><div class="alert-sub">${a.sub}</div></div></div>`).join('');
   // WA button
-  const waText = buildFullWAReport(dash);
-  if (waText) document.getElementById('dash-wa-btn').href = `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(waText)}`;
+  const wa=buildWAText(d);
+  if(wa) document.getElementById('dash-wa').href=`https://wa.me/${WA}?text=${encodeURIComponent(wa)}`;
+  if((d.overSoldCount||0)+(d.lowStockCount||0)>0) document.getElementById('wf-dot').style.display='block';
+  else document.getElementById('wf-dot').style.display='none';
 }
-
-function buildFullWAReport(dash) {
-  if (!dash) return null;
-  const lines = [
-    `🌸 *Flawless Inventory — Weekly Report*`,
-    `📅 *${dash.week}* · ${dash.range}`,
-    ``,
-    `📊 *Summary*`,
-    `• Shops reporting: ${dash.shopsReporting}/${dash.totalShops}`,
-    `• Units delivered: ${dash.totalDelivered}`,
-    `• Units sold: ${dash.totalSold}`,
-    `• In stock: ${dash.totalRemaining}`,
-  ];
-  if (dash.overSoldCount > 0) lines.push(`\n🔴 *Over-sold (${dash.overSoldCount}):*`);
-  (dash.overSold||[]).forEach(a => lines.push(`  ⚠️ ${a.product} @ ${a.shop}: ${a.remaining}`));
-  if (dash.lowStockCount > 0) lines.push(`\n⚠️ *Low Stock (${dash.lowStockCount}):*`);
-  (dash.lowStock||[]).forEach(a => lines.push(`  🔴 ${a.product} @ ${a.shop}: ${a.remaining} left`));
-  lines.push(`\n_Flawless Inventory System_`);
+function buildWAText(d) {
+  if(!d) return null;
+  const lines=[`🌸 *Flawless Inventory Report*`,`📅 *${d.week}* · ${d.range}`,``,
+    `💰 Revenue: €${d.totalRevenue||0} · Profit: €${d.grossProfit||0} (${d.margin||0}%)`,
+    `📦 Delivered: ${d.totalDelivered} · Sold: ${d.totalSold} · Left: ${d.totalRemaining}`,
+    `🏪 ${d.shopsReporting}/${d.totalShops} shops reporting`];
+  if(d.overSoldCount>0){lines.push(`\n🔴 *Over-sold:*`);(d.overSold||[]).forEach(a=>lines.push(`  • ${a.product} @ ${a.shop}`));}
+  if(d.lowStockCount>0){lines.push(`\n⚠️ *Low stock:*`);(d.lowStock||[]).forEach(a=>lines.push(`  • ${a.product} @ ${a.shop}: ${a.remaining} left`));}
+  lines.push(`\n_Flawless Inventory_`);
   return lines.join('\n');
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// STOCK ENTRY
-// ═══════════════════════════════════════════════════════════════════════════
-const SHOP_STYLES = [
-  {icon:'💈',accent:'#C98B3A'},{icon:'✂️',accent:'#8A6A4A'},{icon:'🏬',accent:'#4A8FD4'},
-  {icon:'🏪',accent:'#5AAE7A'},{icon:'🏢',accent:'#CC8800'},{icon:'💆',accent:'#9B6A28'},
-  {icon:'🛍️',accent:'#E05030'},{icon:'🌿',accent:'#5AAE7A'},{icon:'✨',accent:'#C98B3A'},
-];
-function shopStyle(i) { return SHOP_STYLES[i % SHOP_STYLES.length]; }
-
-function renderStock() {
-  const ac = document.getElementById('shop-accordion');
-  if (!S.shops.length) {
-    ac.innerHTML = '<div class="empty-state"><div class="empty-icon">🏪</div><h3>No shops yet</h3><p>Add shops in the Shops section</p></div>';
-    return;
-  }
-  ac.innerHTML = S.shops.map((shop, idx) => buildShopCard(shop, idx)).join('');
-  // restore expanded state
-  S.expanded.forEach(shop => {
-    const id = shopId(shop);
-    const body = document.getElementById(`body-${id}`);
-    const card = document.getElementById(`acc-${id}`);
-    if (body) { body.style.display='block'; card.classList.add('acc-open'); }
-  });
-  ac.addEventListener('input', onNumInput);
+// ─────────────────────────────────────────────────────────────────────────────
+// STOCK ENTRY — AUTO-SAVE
+// ─────────────────────────────────────────────────────────────────────────────
+function scheduleAutoSave(shop) {
+  const id=sid(shop);
+  const ind=document.getElementById(`as-${id}`);
+  if(ind){ind.textContent='saving…';ind.className='as-ind saving';}
+  clearTimeout(saveTimers[shop]);
+  saveTimers[shop]=setTimeout(()=>doAutoSave(shop),1800);
+}
+async function doAutoSave(shop) {
+  const id=sid(shop), ind=document.getElementById(`as-${id}`);
+  const ok=await saveShop(shop,true);
+  if(ind){ ind.textContent=ok?'✓ saved':'⚠ error'; ind.className=`as-ind ${ok?'saved':'err'}`; setTimeout(()=>{ind.textContent='';ind.className='as-ind';},3000); }
 }
 
-function buildShopCard(shop, idx) {
-  const style = shopStyle(idx);
-  const id    = shopId(shop);
-  const ss    = S.stock[shop] || {};
-  let anyData=false, anyError=false;
+function renderStock() {
+  const al=document.getElementById('acc-list');
+  if(!S.shops.length){ al.innerHTML='<div class="empty"><div class="ei">🏪</div><h3>No shops yet</h3><p>Add shops in the Shops section</p></div>'; return; }
+  al.innerHTML=S.shops.map((shop,i)=>buildAcc(shop,i)).join('');
+  S.expanded.forEach(shop=>{
+    const id=sid(shop), body=document.getElementById(`body-${id}`), card=document.getElementById(`acc-${id}`);
+    if(body){body.style.display='block';if(card) card.classList.add('is-open');}
+  });
+  al.addEventListener('input',onInp);
+}
 
-  const rows = S.products.map(p => {
-    const raw = ss[p.name];
-    const e   = normalizeEntry(raw);
-    const cs  = calcStock(raw);
-    const hd  = hasData(raw);
-    const err = hd && cs < 0;
-    const low = hd && !err && cs <= LOW_STOCK;
-    if (hd) anyData=true;
-    if (err) anyError=true;
-    const stockCls = !hd ? 'empty' : err ? 'negative' : low ? 'low' : '';
-    const stockVal = !hd ? '—' : cs;
-    const stIcon   = !hd ? `<span class="st-nil">—</span>` : err ? `<span class="st-err">✗</span>` : `<span class="st-ok">✓</span>`;
-    return `<tr class="${err?'row-err':''}" data-shop="${esc(shop)}" data-product="${esc(p.name)}">
-      <td><span class="pname">${esc(p.name)}<span class="pcat">${esc(p.category)}</span></span></td>
-      <td><input type="number" class="num-input" data-field="initialQty" value="${e.initialQty||''}" min="0" placeholder="0"></td>
-      <td><input type="number" class="num-input" data-field="soldQty"    value="${e.soldQty||''}"    min="0" placeholder="0"></td>
-      <td><input type="number" class="num-input" data-field="topUp"      value="${e.topUp||''}"      min="0" placeholder="0"></td>
-      <td><span class="stock-auto ${stockCls}">${stockVal}</span></td>
-      <td>${stIcon}</td>
+function buildAcc(shop,idx) {
+  const id=sid(shop), ss=S.stock[shop]||{};
+  let anyData=false,anyErr=false;
+  const rows=S.products.map(p=>{
+    const raw=ss[p.name],n=norm(raw),rem=calcRem(raw),hd=hasD(raw),err=hd&&rem<0,low=hd&&!err&&rem<=LOW;
+    if(hd) anyData=true; if(err) anyErr=true;
+    const remCls=!hd?'nil':err?'neg':low?'low':'pos';
+    const imgH=p.image?`<img src="${esc(p.image)}" onerror="this.parentNode.innerHTML='<span style=\\'font-size:14px\\'>🫙</span>'" alt="">`:'<span style="font-size:14px">🫙</span>';
+    return `<tr class="${err?'row-err':''}" data-shop="${esc(shop)}" data-prod="${esc(p.name)}">
+      <td><div class="prod-cell"><div class="no-img">${imgH}</div><div><div class="pname">${esc(p.name.split(' ').slice(0,-1).join(' ')||p.name)}</div><div class="pcat">${esc(p.name.split(' ').pop())} · ${esc(p.category)}</div></div></div></td>
+      <td><input class="num-inp" type="number" data-f="initialQty" value="${n.initialQty||''}" min="0" placeholder="0" inputmode="numeric"></td>
+      <td><input class="num-inp" type="number" data-f="soldQty"    value="${n.soldQty||''}"    min="0" placeholder="0" inputmode="numeric"></td>
+      <td><input class="num-inp" type="number" data-f="topUp"      value="${n.topUp||''}"      min="0" placeholder="0" inputmode="numeric"></td>
+      <td><span class="rem-val ${remCls}">${hd?rem:'—'}</span></td>
+      <td>${!hd?'<span class="st-nil">—</span>':err?'<span class="st-err">✗</span>':'<span class="st-ok">✓</span>'}</td>
     </tr>`;
   }).join('');
-
-  const badgeCls = !anyData ? 'badge-empty' : anyError ? 'badge-err' : 'badge-ok';
-  const badgeTxt = !anyData ? 'Not entered' : anyError ? '⚠ Issue' : '✓ All good';
-  const lastSave = S.stock[shop] ? Object.values(S.stock[shop]).map(v=>v?.savedAt).filter(Boolean).sort().pop() : null;
-
-  return `<div class="acc-card${anyError?' acc-error':''}" id="acc-${id}">
-    <div class="acc-hd" onclick="toggleAcc('${esc(shop)}')">
-      <div class="acc-hd-left">
-        <div class="acc-icon">${style.icon}</div>
-        <div>
-          <div class="acc-name">${esc(shop)}</div>
-          ${lastSave ? `<div class="acc-type">Last saved: ${fmtDate(lastSave)}</div>` : '<div class="acc-type">No data this week</div>'}
-        </div>
+  const mobileCards=S.products.map(p=>{
+    const raw=ss[p.name],n=norm(raw),rem=calcRem(raw),hd=hasD(raw),err=hd&&rem<0,low=hd&&!err&&rem<=LOW;
+    const remCls=!hd?'color:var(--dim)':err?'color:var(--red)':low?'color:var(--amber)':'color:var(--green)';
+    return `<div class="stk-card${err?' sc-err':''}" data-shop="${esc(shop)}" data-prod="${esc(p.name)}">
+      <div class="sc-top">
+        ${p.image?`<img class="sc-img" src="${esc(p.image)}" alt="" onerror="this.outerHTML='<div class=\\'sc-no-img\\'>🫙</div>'">`:'<div class="sc-no-img">🫙</div>'}
+        <div><div class="sc-pname">${esc(p.name)}</div><div class="sc-pcat">${esc(p.category)}</div></div>
+        <div class="sc-rem"><div class="sc-rem-val" style="${remCls}">${hd?rem:'—'}</div><div class="sc-rem-lbl">remaining</div></div>
       </div>
-      <div class="acc-hd-right">
+      <div class="sc-inputs">
+        <div class="sc-field"><label>Initial</label><input class="sc-inp" type="number" data-f="initialQty" value="${n.initialQty||''}" min="0" placeholder="0" inputmode="numeric"></div>
+        <div class="sc-field"><label>Sold</label><input class="sc-inp" type="number" data-f="soldQty" value="${n.soldQty||''}" min="0" placeholder="0" inputmode="numeric"></div>
+        <div class="sc-field"><label>Top-Up</label><input class="sc-inp" type="number" data-f="topUp" value="${n.topUp||''}" min="0" placeholder="0" inputmode="numeric"></div>
+      </div>
+    </div>`;
+  }).join('');
+  const badgeCls=!anyData?'b-empty':anyErr?'b-err':'b-ok';
+  const badgeTxt=!anyData?'Not entered':anyErr?'⚠ Issue':'✓ Good';
+  const lastSave=S.stock[shop]?Object.values(S.stock[shop]).map(v=>v?.savedAt).filter(Boolean).sort().pop():null;
+  return `<div class="acc-card${anyErr?' has-err':''}" id="acc-${id}">
+    <div class="acc-hd" data-shop="${esc(shop)}" onclick="toggleAcc(this.dataset.shop)">
+      <div class="acc-left">
+        <div class="acc-icon">${shopIcon(idx)}</div>
+        <div><div class="acc-name">${esc(shop)}</div><div class="acc-meta">${lastSave?'Updated '+fmtDate(lastSave):'No data this week'}</div></div>
+      </div>
+      <div class="acc-right">
+        <span class="as-ind" id="as-${id}"></span>
         <span class="badge ${badgeCls}">${badgeTxt}</span>
-        <span class="chevron" id="chev-${id}">›</span>
+        <span class="chev">›</span>
       </div>
     </div>
     <div class="acc-body" id="body-${id}" style="display:none">
-      <div class="stock-tbl-wrap">
-        <table class="stock-tbl">
-          <thead><tr><th>Product</th><th>Initial Given</th><th>Qty Sold</th><th>Top-Up</th><th>Remaining</th><th>✓</th></tr></thead>
-          <tbody>${rows}</tbody>
-        </table>
-      </div>
+      <div class="tbl-wrap"><table class="stk-tbl">
+        <thead><tr><th>Product</th><th>Initial</th><th>Sold</th><th>Top-Up</th><th>Remaining</th><th>✓</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>
+      <div class="stk-cards">${mobileCards}</div>
       <div class="acc-footer">
-        <div style="display:flex;align-items:center;gap:10px">
-          <span class="saved-msg" id="saved-${id}">✓ Saved successfully</span>
-          <button class="btn btn-danger btn-sm" onclick="confirmRemoveShop('${esc(shop)}')">Remove Shop</button>
+        <div class="footer-left">
+          <button class="btn btn-danger btn-sm" data-shop="${esc(shop)}" onclick="confirmDel(this.dataset.shop)">Remove</button>
         </div>
-        <div style="display:flex;gap:8px">
-          <button class="btn btn-ghost btn-sm" id="wa-btn-${id}" onclick="openShopWA('${esc(shop)}')" disabled>💬 WhatsApp</button>
-          <button class="btn btn-primary btn-sm" onclick="saveShop('${esc(shop)}')">Save Changes</button>
+        <div style="display:flex;gap:7px;align-items:center">
+          <button class="btn btn-ghost btn-sm" data-shop="${esc(shop)}" onclick="openShopWA(this.dataset.shop)">💬 WhatsApp</button>
+          <button class="btn btn-primary btn-sm" data-shop="${esc(shop)}" onclick="saveShop(this.dataset.shop,false)">Save Now</button>
         </div>
       </div>
     </div>
@@ -1076,455 +956,283 @@ function buildShopCard(shop, idx) {
 }
 
 function toggleAcc(shop) {
-  const id   = shopId(shop);
-  const card = document.getElementById(`acc-${id}`);
-  const body = document.getElementById(`body-${id}`);
-  const chev = document.getElementById(`chev-${id}`);
-  const open = body.style.display === 'none';
-  body.style.display = open ? 'block' : 'none';
-  card.classList.toggle('acc-open', open);
-  if (open) S.expanded.add(shop); else S.expanded.delete(shop);
+  const id=sid(shop),card=document.getElementById(`acc-${id}`),body=document.getElementById(`body-${id}`);
+  if(!body) return;
+  const open=body.style.display==='none';
+  body.style.display=open?'block':'none';
+  card.classList.toggle('is-open',open);
+  if(open) S.expanded.add(shop); else S.expanded.delete(shop);
 }
 
-function onNumInput(e) {
-  const inp = e.target;
-  if (!inp.classList.contains('num-input')) return;
-  const row  = inp.closest('tr');
-  if (!row) return;
-  const iq = Number(row.querySelector('[data-field="initialQty"]').value)||0;
-  const sq = Number(row.querySelector('[data-field="soldQty"]').value)||0;
-  const tu = Number(row.querySelector('[data-field="topUp"]').value)||0;
-  const cs = iq+tu-sq, hd=iq>0||sq>0||tu>0, err=hd&&cs<0, low=hd&&!err&&cs<=LOW_STOCK;
-  row.classList.toggle('row-err', err);
-  const sa = row.querySelector('.stock-auto');
-  if (sa) { sa.textContent = hd?cs:'—'; sa.className='stock-auto'+(err?' negative':low?' low':!hd?' empty':''); }
-  const st = row.querySelector('.st-ok,.st-err,.st-nil');
-  if (st) st.outerHTML = !hd ? '<span class="st-nil">—</span>' : err ? '<span class="st-err">✗</span>' : '<span class="st-ok">✓</span>';
-}
-
-async function saveShop(shop) {
-  const id   = shopId(shop);
-  const card = document.getElementById(`acc-${id}`);
-  const products = {};
-  card.querySelectorAll('tbody tr').forEach(row => {
-    const p = row.dataset.product;
-    if (!p) return;
-    products[p] = {
-      initialQty: Number(row.querySelector('[data-field="initialQty"]').value)||0,
-      soldQty:    Number(row.querySelector('[data-field="soldQty"]').value)||0,
-      topUp:      Number(row.querySelector('[data-field="topUp"]').value)||0,
-    };
-  });
-  const res = await apiPost('/api/stock/bulk', {shop, week:S.week, products});
-  if (res.success) {
-    if (!S.stock[shop]) S.stock[shop]={};
-    const savedAt = new Date().toISOString();
-    Object.entries(products).forEach(([k,v]) => { S.stock[shop][k]={...v,savedAt}; });
-    const msg = document.getElementById(`saved-${id}`);
-    if (msg) { msg.classList.add('show'); setTimeout(()=>msg.classList.remove('show'),3500); }
-    // enable WA button
-    const waBtn = document.getElementById(`wa-btn-${id}`);
-    if (waBtn && res.waUrl) { waBtn.disabled=false; waBtn.dataset.url=res.waUrl; }
-    renderStock();
-    if (S.view==='dash') loadDashboard();
-    toast(`${shop} saved ✓`, 'ok');
+function onInp(e) {
+  const inp=e.target; if(!inp.classList.contains('num-inp')&&!inp.classList.contains('sc-inp')) return;
+  const row=inp.closest('[data-shop]'); if(!row) return;
+  // recalc remaining in this row
+  const iq=Number(row.querySelector('[data-f="initialQty"]').value)||0;
+  const sq=Number(row.querySelector('[data-f="soldQty"]').value)||0;
+  const tu=Number(row.querySelector('[data-f="topUp"]').value)||0;
+  const rem=iq+tu-sq,hd=iq>0||sq>0||tu>0,err=hd&&rem<0,low=hd&&!err&&rem<=LOW;
+  if(row.tagName==='TR') {
+    row.classList.toggle('row-err',err);
+    const rv=row.querySelector('.rem-val');
+    if(rv){rv.textContent=hd?rem:'—';rv.className='rem-val '+(hd?err?'neg':low?'low':'pos':'nil');}
+    const st=row.querySelector('.st-ok,.st-err,.st-nil');
+    if(st) st.outerHTML=!hd?'<span class="st-nil">—</span>':err?'<span class="st-err">✗</span>':'<span class="st-ok">✓</span>';
   } else {
-    toast(res.error || 'Save failed', 'err');
+    row.classList.toggle('sc-err',err);
+    const rv=row.querySelector('.sc-rem-val');
+    if(rv){rv.textContent=hd?rem:'—';rv.style.color=hd?(err?'var(--red)':low?'var(--amber)':'var(--green)'):'var(--dim)';}
+  }
+  scheduleAutoSave(row.dataset.shop);
+}
+
+async function saveShop(shop,silent=false) {
+  const id=sid(shop),card=document.getElementById(`acc-${id}`);
+  if(!card) return false;
+  const products={};
+  // collect from both table rows and mobile cards
+  card.querySelectorAll('tr[data-prod],div[data-prod]').forEach(row=>{
+    const p=row.dataset.prod; if(!p) return;
+    const iq=Number(row.querySelector('[data-f="initialQty"]')?.value)||0;
+    const sq=Number(row.querySelector('[data-f="soldQty"]')?.value)||0;
+    const tu=Number(row.querySelector('[data-f="topUp"]')?.value)||0;
+    if(!products[p]||(iq||sq||tu)) products[p]={initialQty:iq,soldQty:sq,topUp:tu};
+  });
+  const res=await apiPost('/api/stock/bulk',{shop,week:S.week,products});
+  if(res.success){
+    if(!S.stock[shop]) S.stock[shop]={};
+    const savedAt=new Date().toISOString();
+    Object.entries(products).forEach(([k,v])=>{S.stock[shop][k]={...v,savedAt};});
+    if(!silent) {toast(`${shop} saved ✓`,'ok'); renderStock();}
+    if(res.waUrl){ const wb=document.querySelector(`#acc-${id} .btn-ghost[data-shop]`); if(wb) wb.dataset.waurl=res.waUrl; }
+    if(S.view==='dash') loadDash();
+    return true;
+  } else {
+    if(!silent) toast(res.error||'Save failed','err');
+    return false;
   }
 }
 
 function openShopWA(shop) {
-  const id  = shopId(shop);
-  const btn = document.getElementById(`wa-btn-${id}`);
-  if (btn && btn.dataset.url) window.open(btn.dataset.url,'_blank');
+  const id=sid(shop); const btn=document.querySelector(`#acc-${id} .btn-ghost[onclick*="openShopWA"]`);
+  if(btn?.dataset.waurl) window.open(btn.dataset.waurl,'_blank');
+  else toast('Save stock first to generate WhatsApp link','inf');
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────────────────────
 // SHOPS
-// ═══════════════════════════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────────────────────
+const contactTimers = {};
+
 function renderShops() {
-  const grid = document.getElementById('shops-grid');
-  if (!S.shops.length) {
-    grid.innerHTML = '<div class="empty-state"><div class="empty-icon">🏪</div><h3>No shops yet</h3><p>Add your first shop above</p></div>';
-    return;
-  }
-  grid.innerHTML = S.shops.map((shop, idx) => {
-    const id  = shopId(shop);
-    const sty = shopStyle(idx);
-    const con = S.contacts[shop] || {};
-    const lastSave = S.stock[shop] ? Object.values(S.stock[shop]).map(v=>v?.savedAt).filter(Boolean).sort().pop() : null;
-    return `<div class="shop-mgmt-card">
-      <div class="smc-header">
-        <div style="display:flex;align-items:center;gap:10px">
-          <span style="font-size:22px">${sty.icon}</span>
-          <div class="smc-name">${esc(shop)}</div>
-        </div>
-        <button class="btn btn-danger btn-sm" onclick="confirmRemoveShop('${esc(shop)}')">Remove</button>
+  const g=document.getElementById('shops-grid');
+  if(!S.shops.length){ g.innerHTML='<div class="empty"><div class="ei">🏪</div><h3>No shops yet</h3><p>Add above</p></div>'; return; }
+  g.innerHTML=S.shops.map((shop,i)=>{
+    const id=sid(shop),con=S.contacts[shop]||{};
+    const lastSave=S.stock[shop]?Object.values(S.stock[shop]).map(v=>v?.savedAt).filter(Boolean).sort().pop():null;
+    return `<div class="shop-card">
+      <div class="sc-hd">
+        <div class="sc-title"><span class="sc-icon">${shopIcon(i)}</span><span class="sc-sname">${esc(shop)}</span></div>
+        <button class="btn btn-danger btn-sm" data-shop="${esc(shop)}" onclick="confirmDel(this.dataset.shop)">Remove</button>
       </div>
-      <div class="smc-fields">
-        <div>
-          <label>Contact Person</label>
-          <input class="smc-input" id="con-${id}" type="text" value="${esc(con.contact||'')}" placeholder="Name…">
-        </div>
-        <div>
-          <label>Email</label>
-          <input class="smc-input" id="email-${id}" type="email" value="${esc(con.email||'')}" placeholder="email@example.com">
-        </div>
+      <div class="field-grp">
+        <div><label class="field-lbl">Contact Person</label>
+          <input class="field-inp" id="con-${id}" type="text" value="${esc(con.contact||'')}" placeholder="Name…"
+            data-shop="${esc(shop)}" oninput="scheduleContactSave(this.dataset.shop)"></div>
+        <div><label class="field-lbl">Email Address</label>
+          <input class="field-inp" id="email-${id}" type="email" value="${esc(con.email||'')}" placeholder="email@example.com"
+            data-shop="${esc(shop)}" oninput="scheduleContactSave(this.dataset.shop)"></div>
       </div>
-      <div class="smc-footer">
-        <div class="smc-last">Last update: ${lastSave?fmtDate(lastSave):'Never'}</div>
-        <button class="btn btn-ghost btn-sm" onclick="saveContact('${esc(shop)}')">Save Contact</button>
+      <div class="sc-ft">
+        <div class="sc-last">Last stock: ${lastSave?fmtDate(lastSave):'Never'}</div>
+        <span class="as-ind" id="cas-${id}"></span>
       </div>
     </div>`;
   }).join('');
+}
+
+function scheduleContactSave(shop) {
+  const id=sid(shop),ind=document.getElementById(`cas-${id}`);
+  if(ind){ind.textContent='saving…';ind.className='as-ind saving';}
+  clearTimeout(contactTimers[shop]);
+  contactTimers[shop]=setTimeout(async()=>{
+    const contact=document.getElementById(`con-${id}`)?.value.trim()||'';
+    const email=document.getElementById(`email-${id}`)?.value.trim()||'';
+    const res=await apiPost('/api/contacts',{shop,contact,email});
+    if(res.success){
+      if(!S.contacts[shop]) S.contacts[shop]={};
+      S.contacts[shop].contact=contact; S.contacts[shop].email=email;
+      if(ind){ind.textContent='✓ saved';ind.className='as-ind saved';setTimeout(()=>{ind.textContent='';ind.className='as-ind';},2500);}
+    } else {
+      if(ind){ind.textContent='⚠ error';ind.className='as-ind err';}
+    }
+  },1000);
 }
 
 async function addShop() {
-  const inp  = document.getElementById('add-shop-input');
-  const name = inp.value.trim();
-  if (!name) return;
-  const res = await apiPost('/api/shops', {name});
-  if (res.success) {
-    S.shops.push(name);
-    inp.value='';
-    renderShops();
-    renderStock();
-    toast(`"${name}" added`, 'ok');
-  } else {
-    toast(res.error || 'Could not add', 'err');
-  }
+  const inp=document.getElementById('add-shop-inp'),name=inp.value.trim(); if(!name) return;
+  const res=await apiPost('/api/shops',{name});
+  if(res.success){S.shops.push(name);inp.value='';renderShops();renderStock();toast(`"${name}" added`,'ok');}
+  else toast(res.error||'Could not add','err');
+}
+function confirmDel(shop){if(!confirm(`Remove "${shop}"?\n\nStock history is preserved.`)) return; delShop(shop);}
+async function delShop(shop){
+  const res=await apiDel(`/api/shops/${encodeURIComponent(shop)}`);
+  if(res.success){S.shops=S.shops.filter(s=>s!==shop);S.expanded.delete(shop);renderShops();renderStock();toast(`"${shop}" removed`,'ok');}
+  else toast('Could not remove','err');
 }
 
-function confirmRemoveShop(shop) {
-  if (!confirm(`Remove "${shop}"?\n\nHistorical stock data will be preserved.`)) return;
-  removeShop(shop);
-}
-
-async function removeShop(shop) {
-  const res = await apiDel(`/api/shops/${encodeURIComponent(shop)}`);
-  if (res.success) {
-    S.shops = S.shops.filter(s => s!==shop);
-    S.expanded.delete(shop);
-    renderShops();
-    renderStock();
-    toast(`"${shop}" removed`, 'ok');
-  } else {
-    toast('Could not remove', 'err');
-  }
-}
-
-async function saveContact(shop) {
-  const id      = shopId(shop);
-  const contact = document.getElementById(`con-${id}`)?.value.trim() || '';
-  const email   = document.getElementById(`email-${id}`)?.value.trim() || '';
-  const res = await apiPost('/api/contacts', {shop, contact, email});
-  if (res.success) {
-    if (!S.contacts[shop]) S.contacts[shop] = {};
-    S.contacts[shop].contact = contact;
-    S.contacts[shop].email   = email;
-    toast(`Contact for "${shop}" saved`, 'ok');
-  } else {
-    toast(res.error || 'Save failed', 'err');
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────────────────────
 // WORKFLOW
-// ═══════════════════════════════════════════════════════════════════════════
-function wfItem(label, yes, shopLabel, manualKey) {
-  const cls  = yes===true ? 'yes auto' : yes===false ? 'no auto' : (S.manual[manualKey] ? 'yes' : '');
-  const icon = yes===true ? 'yes' : yes===false ? 'no' : (S.manual[manualKey] ? 'yes' : '');
-  const toggleBtn = (yes===null || yes===undefined) ?
-    `<button class="wf-toggle" onclick="toggleManual('${manualKey}')">${S.manual[manualKey]?'Mark No':'Mark Yes'}</button>` : '';
-  return `<div class="wf-item">
-    <div class="wf-check ${cls} ${icon}"></div>
-    <div class="wf-label">${esc(label)}${shopLabel?`<span class="wf-shop">${esc(shopLabel)}</span>`:''}
-    </div>
-    ${toggleBtn}
-  </div>`;
+// ─────────────────────────────────────────────────────────────────────────────
+function wfItem(label,yes,shopLabel,key){
+  const isManual=yes===null||yes===undefined;
+  const val=isManual?S.manual[key]:yes;
+  const cls=val===true?'yes':val===false?'no':'';
+  const tog=isManual?`<button class="wf-tog" data-key="${esc(key)}" onclick="togManual(this.dataset.key)">${S.manual[key]?'Mark No':'Mark Yes'}</button>`:'';
+  return `<div class="wf-item"><div class="wf-chk ${cls}"></div>
+    <div class="wf-lbl">${esc(label)}${shopLabel?`<span class="wf-shop-lbl">${esc(shopLabel)}</span>`:''}</div>${tog}</div>`;
+}
+function togManual(key){S.manual[key]=!S.manual[key];saveManual();renderWF();}
+
+function renderWF(){
+  const cont=document.getElementById('wf-content'); let tot=0,done=0;
+  const chk=v=>{tot++;if(v)done++;return v;};
+  const man=key=>{tot++;if(S.manual[key])done++;return S.manual[key];};
+  const sections=[];
+
+  // Product setup
+  let html=S.products.map(p=>[
+    wfItem(`${p.name} — in system`,chk(true),null,null),
+    wfItem(`${p.name} — stock entered`,chk(S.shops.some(sh=>hasD(S.stock[sh]?.[p.name]))),null,null),
+    wfItem(`${p.name} — min level set`,null,null,`min_${p.name}_${S.week}`),
+    wfItem(`${p.name} — category: ${p.category}`,chk(true),null,null),
+  ].join('')).join('');
+  sections.push({title:'Product Setup',html:`<div class="wf-grid">${html}</div>`});
+
+  // Shop setup
+  html=S.shops.map(sh=>{
+    const con=S.contacts[sh]||{};
+    const init=Object.values(S.stock[sh]||{}).some(e=>norm(e).initialQty>0);
+    const lastSave=Object.values(S.stock[sh]||{}).map(v=>v?.savedAt).filter(Boolean).pop();
+    return [
+      wfItem('Shop added to system',chk(true),sh,null),
+      wfItem('Initial stock delivered recorded',chk(init),sh,null),
+      wfItem('Contact person & email saved',chk(!!(con.contact||con.email)),sh,null),
+      wfItem('Last update recorded',chk(!!lastSave),sh,null),
+    ].join('');
+  }).join('');
+  sections.push({title:'Shop Setup',html:`<div class="wf-grid">${html}</div>`});
+
+  // Weekly workflow
+  html=S.shops.map(sh=>{
+    const anyInit=Object.values(S.stock[sh]||{}).some(e=>norm(e).initialQty>0);
+    const anySold=Object.values(S.stock[sh]||{}).some(e=>norm(e).soldQty>0);
+    return [
+      wfItem('Request sales update sent',null,sh,`req_${sh}_${S.week}`),
+      wfItem('Sales data received',chk(anySold),sh,null),
+      wfItem('Stock remaining updated',chk(anyInit&&anySold),sh,null),
+      wfItem('System updated',chk(anyInit),sh,null),
+    ].join('');
+  }).join('');
+  sections.push({title:'Weekly Workflow',html:`<div class="wf-grid">${html}</div>`});
+
+  // Sales + inventory
+  let totSold=0,anyInit=false;
+  S.shops.forEach(sh=>{ const d=S.stock[sh]||{}; Object.values(d).forEach(e=>{ const n=norm(e); totSold+=n.soldQty; if(n.initialQty>0) anyInit=true; }); });
+  html=[
+    wfItem(`Units sold recorded (${totSold} total)`,chk(totSold>0),null,null),
+    wfItem('Remaining stock calculated',chk(anyInit),null,null),
+    wfItem('Total sales updated',chk(anyInit&&totSold>0),null,null),
+    wfItem('Low stock checked',chk(true),null,null),
+    wfItem('Restock needed identified',null,null,`restock_${S.week}`),
+    wfItem('Stock refill sent to shop',null,null,`refill_${S.week}`),
+    wfItem('New stock entry updated',chk(anyInit),null,null),
+  ].join('');
+  sections.push({title:'Sales & Inventory Control',html:`<div class="wf-grid">${html}</div>`});
+
+  // Notifications + final
+  html=[
+    wfItem('Weekly reminder email sent',null,null,`notif_${S.week}`),
+    wfItem('Follow-up sent (no response)',null,null,`followup_${S.week}`),
+    wfItem('30ml stock updated',chk(S.products.filter(p=>p.category==='30ml').some(p=>S.shops.some(sh=>hasD(S.stock[sh]?.[p.name])))),null,null),
+    wfItem('100ml stock updated',chk(S.products.filter(p=>p.category==='100ml').some(p=>S.shops.some(sh=>hasD(S.stock[sh]?.[p.name])))),null,null),
+    wfItem('Discovery Set stock updated',chk(S.shops.some(sh=>hasD(S.stock[sh]?.['Discovery Set']))),null,null),
+    wfItem('All shops submitted updates',chk(S.shops.length>0&&S.shops.every(sh=>Object.values(S.stock[sh]||{}).some(e=>hasD(e)))),null,null),
+    wfItem('Sales report generated',null,null,`report_${S.week}`),
+    wfItem('Inventory matches sales data',null,null,`match_${S.week}`),
+  ].join('');
+  sections.push({title:'Notifications & Final Check',html:`<div class="wf-grid">${html}</div>`});
+
+  const pct=tot>0?Math.round(done/tot*100):0;
+  document.getElementById('wf-pct').textContent=pct+'%';
+  document.getElementById('wf-pct-lbl').textContent=`${done} of ${tot} complete`;
+  document.getElementById('wf-fill').style.width=pct+'%';
+  cont.innerHTML=sections.map(s=>`<div class="wf-section"><div class="wf-section-hd">${esc(s.title)}<span class="wf-count">${s.html.split('wf-item').length-1} items</span></div>${s.html}</div>`).join('');
 }
 
-function toggleManual(key) {
-  S.manual[key] = !S.manual[key];
-  saveManual();
-  renderWorkflow();
-}
-
-function renderWorkflow() {
-  const cont = document.getElementById('workflow-content');
-  const weekStockData = S.stock;
-  let total=0, done=0;
-
-  function check(yes) { total++; if(yes) done++; return yes; }
-  function checkManual(key) { total++; if(S.manual[key]) done++; return S.manual[key]; }
-
-  const sections = [];
-
-  // 1. Product Setup
-  const productItems = S.products.map(p => {
-    const inSystem   = check(true);
-    const anyStock   = check(S.shops.some(sh => {
-      const e = S.stock[sh]?.[p.name];
-      return e && normalizeEntry(e).initialQty > 0;
-    }));
-    const minStockOk = checkManual(`min_${p.name}_${S.week}`);
-    return [
-      wfItem(`${p.name} — Added to System`,        inSystem,  null, null),
-      wfItem(`${p.name} — Stock Qty Entered`,       anyStock,  null, null),
-      wfItem(`${p.name} — Min Stock Level Set`,     minStockOk?true:null, null, `min_${p.name}_${S.week}`),
-      wfItem(`${p.name} — Category: ${p.category}`, check(true), null, null),
-    ].join('');
-  }).join('');
-  sections.push({ title:'Product Setup', count: S.products.length*4, html: `<div class="wf-grid">${productItems}</div>` });
-
-  // 2. Shop Setup
-  const shopSetupItems = S.shops.map(sh => {
-    const con = S.contacts[sh] || {};
-    const inSystem   = check(true);
-    const initStock  = check(S.shops.some(() => {
-      const d = S.stock[sh] || {};
-      return Object.values(d).some(e => normalizeEntry(e).initialQty > 0);
-    }));
-    const hasContact = check(!!(con.contact || con.email));
-    const lastUpdate = Object.values(S.stock[sh]||{}).map(v=>v?.savedAt).filter(Boolean).sort().pop();
-    const hasUpdate  = check(!!lastUpdate);
-    return [
-      wfItem(`Shop Added to System`,          inSystem,  sh, null),
-      wfItem(`Initial Stock Delivered`,        initStock, sh, null),
-      wfItem(`Contact Person & Email Saved`,   hasContact, sh, null),
-      wfItem(`Last Update Date Recorded`,      hasUpdate, sh, null),
-    ].join('');
-  }).join('');
-  sections.push({ title:'Shop Setup', count: S.shops.length*4, html: `<div class="wf-grid">${shopSetupItems}</div>` });
-
-  // 3. Weekly Workflow (per shop)
-  const weeklyItems = S.shops.map(sh => {
-    const shopData = S.stock[sh] || {};
-    const hasAnySold = Object.values(shopData).some(e => normalizeEntry(e).soldQty > 0);
-    const hasAnyInit = Object.values(shopData).some(e => normalizeEntry(e).initialQty > 0);
-    return [
-      wfItem(`Request Sales Update Sent`, checkManual(`req_${sh}_${S.week}`)?true:null, sh, `req_${sh}_${S.week}`),
-      wfItem(`Sales Data Received`,       check(hasAnySold), sh, null),
-      wfItem(`Stock Remaining Updated`,   check(hasAnyInit && hasAnySold), sh, null),
-      wfItem(`System Updated`,            check(hasAnyInit), sh, null),
-    ].join('');
-  }).join('');
-  sections.push({ title:'Weekly Workflow', count: S.shops.length*4, html: `<div class="wf-grid">${weeklyItems}</div>` });
-
-  // 4. Sales Tracking
-  let totalSold=0, anyRemaining=false, totalUpdated=false;
-  S.shops.forEach(sh => {
-    Object.values(S.stock[sh]||{}).forEach(e => {
-      const n=normalizeEntry(e);
-      if(n.soldQty>0) totalSold+=n.soldQty;
-      if(n.initialQty>0) anyRemaining=true;
-      if(n.initialQty>0||n.soldQty>0) totalUpdated=true;
-    });
-  });
-  const salesItems = [
-    wfItem(`Units Sold Recorded (${totalSold} total)`, check(totalSold>0), null, null),
-    wfItem(`Remaining Stock Calculated`,                check(anyRemaining), null, null),
-    wfItem(`Total Sales Updated`,                       check(totalUpdated), null, null),
-  ].join('');
-  sections.push({ title:'Sales Tracking', count:3, html:`<div class="wf-grid">${salesItems}</div>` });
-
-  // 5. Inventory Control
-  const lowItems = S.dash?.lowStock || [];
-  const overItems = S.dash?.overSold || [];
-  const invItems = [
-    wfItem(`Low Stock Checked`,                    check(true), null, null),
-    wfItem(`Restock Needed Identified`,             checkManual(`restock_id_${S.week}`)?true:null, null, `restock_id_${S.week}`),
-    wfItem(`Stock Refill Sent to Shop`,             checkManual(`refill_${S.week}`)?true:null, null, `refill_${S.week}`),
-    wfItem(`New Stock Entry Updated`,               check(anyRemaining), null, null),
-  ].join('');
-  sections.push({ title:'Inventory Control', count:4, html:`<div class="wf-grid">${invItems}</div>` });
-
-  // 6. Notifications
-  const notifItems = [
-    wfItem(`Weekly Reminder Email Sent to Shops`,   checkManual(`notif_weekly_${S.week}`)?true:null, null, `notif_weekly_${S.week}`),
-    wfItem(`Follow-up Sent (if no response)`,       checkManual(`notif_followup_${S.week}`)?true:null, null, `notif_followup_${S.week}`),
-    wfItem(`System Update Notification Sent`,       checkManual(`notif_update_${S.week}`)?true:null, null, `notif_update_${S.week}`),
-  ].join('');
-  sections.push({ title:'Notifications', count:3, html:`<div class="wf-grid">${notifItems}</div>` });
-
-  // 7. Product Types Check
-  const ptItems = [
-    wfItem(`30ml Stock Updated`, check(S.products.filter(p=>p.category==='30ml').some(p => S.shops.some(sh => hasData(S.stock[sh]?.[p.name])))), null, null),
-    wfItem(`100ml Stock Updated`, check(S.products.filter(p=>p.category==='100ml').some(p => S.shops.some(sh => hasData(S.stock[sh]?.[p.name])))), null, null),
-    wfItem(`Discovery Set Stock Updated`, check(S.shops.some(sh => hasData(S.stock[sh]?.['Discovery Set']))), null, null),
-  ].join('');
-  sections.push({ title:'Product Types Check', count:3, html:`<div class="wf-grid">${ptItems}</div>` });
-
-  // 8. Shop-Level Tracking
-  const shopLvlItems = S.shops.map(sh => {
-    const shopData = S.stock[sh] || {};
-    const delivered = check(Object.values(shopData).some(e => normalizeEntry(e).initialQty > 0));
-    const sold      = check(Object.values(shopData).some(e => normalizeEntry(e).soldQty > 0));
-    const remaining = check(delivered); // if delivered is recorded, remaining is verified
-    return [
-      wfItem(`Delivered Qty Recorded`, delivered, sh, null),
-      wfItem(`Sold Qty Recorded`,      sold, sh, null),
-      wfItem(`Remaining Qty Verified`, remaining, sh, null),
-    ].join('');
-  }).join('');
-  sections.push({ title:'Shop-Level Tracking', count: S.shops.length*3, html:`<div class="wf-grid">${shopLvlItems}</div>` });
-
-  // 9. Final Weekly Check
-  const allShopsUpdated = S.shops.length > 0 && S.shops.every(sh => Object.values(S.stock[sh]||{}).some(e=>hasData(e)));
-  const hasData_ = anyRemaining;
-  const finalItems = [
-    wfItem(`All Shops Submitted Updates`,   check(allShopsUpdated), null, null),
-    wfItem(`All Data Entered in System`,    check(hasData_), null, null),
-    wfItem(`Sales Report Generated`,        checkManual(`report_gen_${S.week}`)?true:null, null, `report_gen_${S.week}`),
-    wfItem(`Low Stock Items Flagged`,       check(S.dash!=null), null, null),
-    wfItem(`Inventory Matches Sales Data`,  checkManual(`inv_match_${S.week}`)?true:null, null, `inv_match_${S.week}`),
-  ].join('');
-  sections.push({ title:'Final Weekly Check', count:5, html:`<div class="wf-grid">${finalItems}</div>` });
-
-  // Update summary
-  const pct = total > 0 ? Math.round((done/total)*100) : 0;
-  document.getElementById('wf-pct').textContent      = pct + '%';
-  document.getElementById('wf-pct-fill').style.width = pct + '%';
-
-  // Render all sections
-  cont.innerHTML = sections.map(s => `
-    <div class="wf-section">
-      <div class="wf-section-title">${esc(s.title)}<span class="wf-count">${s.count} items</span></div>
-      ${s.html}
-    </div>
-  `).join('');
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────────────────────
 // REPORTS
-// ═══════════════════════════════════════════════════════════════════════════
-function renderReports() {
-  const sel = document.getElementById('report-week-sel');
-  if (sel && !sel.options.length) {
-    sel.innerHTML = S.weeks.map(w => `<option value="${esc(w)}"${w===S.week?' selected':''}>${w} — ${weekRange(w)}</option>`).join('');
-  }
-  buildWAReport(null); // pre-build WA link
+// ─────────────────────────────────────────────────────────────────────────────
+function renderReports(){
+  const sel=document.getElementById('rpt-week-sel');
+  if(sel&&!sel.options.length) sel.innerHTML=recentWeeks(16).map(w=>`<option value="${w}"${w===S.week?' selected':''}>${w} — ${weekRange(w)}</option>`).join('');
+}
+function dlReport(){ window.open(`/api/report/${document.getElementById('rpt-week-sel')?.value||S.week}`,'_blank'); }
+async function sendEmail(){
+  const week=document.getElementById('rpt-week-sel')?.value||S.week;
+  const btn=document.getElementById('email-btn'); btn.disabled=true; btn.textContent='Sending…';
+  const res=await apiPost('/api/send-report',{week});
+  toast(res.success?(res.message||'Sent!'):(res.error||'Failed'),res.success?'ok':'err');
+  btn.disabled=false; btn.textContent='Send Email';
+}
+function buildWALink(e){
+  const week=document.getElementById('rpt-week-sel')?.value||S.week;
+  const txt=buildWAText(S.dash&&S.dash.week===week?S.dash:{week,range:weekRange(week),totalRevenue:0,totalCOGS:0,grossProfit:0,margin:0,totalDelivered:0,totalSold:0,totalRemaining:0,shopsReporting:0,totalShops:S.shops.length,overSoldCount:0,lowStockCount:0,overSold:[],lowStock:[]});
+  document.getElementById('rpt-wa').href=`https://wa.me/${WA}?text=${encodeURIComponent(txt)}`;
 }
 
-function downloadReport() {
-  const week = document.getElementById('report-week-sel')?.value || S.week;
-  window.open(`/api/report/${week}`, '_blank');
-}
-
-function downloadReportCurrent() { window.open(`/api/report/${S.week}`, '_blank'); }
-
-async function sendEmailReport() {
-  const week = document.getElementById('report-week-sel')?.value || S.week;
-  const btn  = document.getElementById('email-btn');
-  btn.disabled=true; btn.textContent='Sending…';
-  const res = await apiPost('/api/send-report', {week});
-  if (res.success) {
-    toast(res.message || 'Report sent!', 'ok');
-  } else {
-    toast(res.error || 'Failed to send', 'err');
-  }
-  btn.disabled=false; btn.textContent='Send Email Report';
-}
-
-function buildWAReport(e) {
-  const week = document.getElementById('report-week-sel')?.value || S.week;
-  const dash = S.dash;
-  const lines = [
-    `🌸 *Flawless Inventory Report*`,
-    `📅 Week: *${week}* · ${weekRange(week)}`,
-    ``,
-  ];
-  if (dash && dash.week === week) {
-    lines.push(`📊 *Summary*`);
-    lines.push(`• Shops reporting: ${dash.shopsReporting}/${dash.totalShops}`);
-    lines.push(`• Delivered: ${dash.totalDelivered} units`);
-    lines.push(`• Sold: ${dash.totalSold} units`);
-    lines.push(`• In stock: ${dash.totalRemaining} units`);
-    if (dash.overSoldCount>0) {
-      lines.push(`\n🔴 *Over-sold (${dash.overSoldCount}):*`);
-      (dash.overSold||[]).forEach(a => lines.push(`  • ${a.product} @ ${a.shop}`));
-    }
-    if (dash.lowStockCount>0) {
-      lines.push(`\n⚠️ *Low Stock (${dash.lowStockCount}):*`);
-      (dash.lowStock||[]).forEach(a => lines.push(`  • ${a.product} @ ${a.shop}: ${a.remaining} left`));
-    }
-  } else {
-    lines.push(`_(Open the app for detailed stats)_`);
-  }
-  lines.push(`\n_Sent from Flawless Inventory_`);
-  const waUrl = `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(lines.join('\n'))}`;
-  const btn = document.getElementById('report-wa-btn');
-  if (btn) btn.href = waUrl;
-  if (e) e.preventDefault(); // prevent default; href is set above
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────────────────────
 // LOGS
-// ═══════════════════════════════════════════════════════════════════════════
-async function loadLogs(force=false) {
-  if (S.logs.length && !force) { renderLogs(); return; }
-  const logs = await api('/api/logs?limit=200');
-  S.logs = Array.isArray(logs) ? logs : [];
+// ─────────────────────────────────────────────────────────────────────────────
+async function loadLogs(force=false){
+  if(S.logs.length&&!force){renderLogs();return;}
+  const r=await api('/api/logs?limit=200');
+  S.logs=Array.isArray(r)?r:[];
   renderLogs();
 }
-
-function renderLogs() {
-  const cont = document.getElementById('log-list');
-  if (!S.logs.length) {
-    cont.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><h3>No activity yet</h3><p>Actions will appear here</p></div>';
-    return;
-  }
-  const meta = {
-    STOCK_SAVE:  {badge:'lb-save',  label:'Stock Saved'},
-    ADD_SHOP:    {badge:'lb-shop',  label:'Shop Added'},
-    REMOVE_SHOP: {badge:'lb-del',   label:'Shop Removed'},
-    INIT_SHOPS:  {badge:'lb-shop',  label:'Shops Seeded'},
-    EMAIL_SENT:  {badge:'lb-email', label:'Email Sent'},
-    CRON_EMAIL:  {badge:'lb-email', label:'Auto Email'},
-  };
-  cont.innerHTML = S.logs.map(log => {
-    const m   = meta[log.action] || {badge:'lb-other', label:log.action};
-    const ts  = new Date(log.timestamp);
-    const tStr= ts.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})+' '+ts.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
-    const desc= log.shop ? esc(log.shop) : log.to ? `→ ${esc(log.to)}` : '';
-    const sub = [log.week?`Week ${log.week}`:'', log.products?`${log.products} products`:'', log.count?`${log.count} shops`:''].filter(Boolean).join(' · ');
-    return `<div class="log-item">
-      <div class="log-time">${tStr}</div>
-      <div class="log-action">
-        <span class="log-badge ${m.badge}">${m.label}</span>
-        <span class="log-desc">${desc}</span>
-        ${sub?`<div class="log-sub">${sub}</div>`:''}
-      </div>
-    </div>`;
+function renderLogs(){
+  const cont=document.getElementById('log-list');
+  if(!S.logs.length){cont.innerHTML='<div class="empty"><div class="ei">📋</div><h3>No activity yet</h3></div>';return;}
+  const meta={STOCK_SAVE:{badge:'lb-save',label:'Saved'},ADD_SHOP:{badge:'lb-shop',label:'Shop Added'},REMOVE_SHOP:{badge:'lb-del',label:'Removed'},INIT_SHOPS:{badge:'lb-shop',label:'Seeded'},EMAIL_SENT:{badge:'lb-email',label:'Email Sent'},CRON_EMAIL:{badge:'lb-email',label:'Auto Email'}};
+  cont.innerHTML=S.logs.map(log=>{
+    const m=meta[log.action]||{badge:'lb-other',label:log.action};
+    const ts=new Date(log.timestamp);
+    const t=ts.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})+' '+ts.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+    const desc=log.shop?esc(log.shop):log.to?`→ ${esc(log.to)}`:'';
+    const sub=[log.week?`Week ${log.week}`:'',log.products?`${log.products} products`:'',log.count?`${log.count} shops`:''].filter(Boolean).join(' · ');
+    return `<div class="log-item"><div class="log-time">${t}</div><div class="log-body"><span class="log-badge ${m.badge}">${m.label}</span><span class="log-desc">${desc}</span>${sub?`<div class="log-sub">${sub}</div>`:''}</div></div>`;
   }).join('');
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────────────────────
 // TOAST
-// ═══════════════════════════════════════════════════════════════════════════
-function toast(msg, type='inf') {
-  const el = document.createElement('div');
-  el.className = `toast toast-${type}`;
-  el.textContent = msg;
-  document.getElementById('toasts').appendChild(el);
-  setTimeout(() => el.remove(), 3500);
+// ─────────────────────────────────────────────────────────────────────────────
+function toast(msg,type='inf'){
+  const el=document.createElement('div');el.className=`toast t-${type}`;el.textContent=msg;
+  document.getElementById('toasts').appendChild(el);setTimeout(()=>el.remove(),3500);
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// BOOT
-// ═══════════════════════════════════════════════════════════════════════════
-(async () => {
-  if (S.token) {
-    const verify = await fetch('/api/auth/verify', {headers:{'Authorization':`Bearer ${S.token}`}}).then(r=>r.json()).catch(()=>({valid:false}));
-    if (verify.valid) {
-      document.getElementById('login-screen').style.display = 'none';
-      document.getElementById('app').style.display          = 'block';
-      await initApp();
-      return;
-    }
-    S.token = ''; localStorage.removeItem('fl_token');
+// ─────────────────────────────────────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────────────────────────────────────
+(async()=>{
+  if(S.token){
+    const v=await fetch('/api/auth/verify',{headers:{'Authorization':`Bearer ${S.token}`}}).then(r=>r.json()).catch(()=>({valid:false}));
+    if(v.valid){boot();return;}
+    S.token='';localStorage.removeItem('fl_tok');
   }
-  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('login-screen').style.display='flex';
 })();
 </script>
 </body>

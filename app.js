@@ -10,16 +10,17 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ── Products ──────────────────────────────────────────────────────────────────
+const CDN = 'https://cdn.shopify.com/s/files/1/0647/2535/2606/files';
 const PRODUCTS = [
-  { name: 'Monte-Carlo 30ml',      category: '30ml'          },
-  { name: 'Monte-Carlo 100ml',     category: '100ml'         },
-  { name: 'Summer in Paris 30ml',  category: '30ml'          },
-  { name: 'Summer in Paris 100ml', category: '100ml'         },
-  { name: 'Bedouin 30ml',          category: '30ml'          },
-  { name: 'Bedouin 100ml',         category: '100ml'         },
-  { name: 'Rub Al Khali 30ml',     category: '30ml'          },
-  { name: 'Rub Al Khali 100ml',    category: '100ml'         },
-  { name: 'Discovery Set',         category: 'Discovery Set' },
+  { name: 'Monte-Carlo 30ml',      category: '30ml',         sellPrice: 49, costPrice: 15, image: `${CDN}/Monte-Carlo-bottle.jpg?v=1719491982` },
+  { name: 'Monte-Carlo 100ml',     category: '100ml',        sellPrice: 89, costPrice: 28, image: `${CDN}/Monte-Carlo-bottle.jpg?v=1719491982` },
+  { name: 'Summer in Paris 30ml',  category: '30ml',         sellPrice: 49, costPrice: 15, image: `${CDN}/summer-in-paris-bottle.jpg?v=1719492048` },
+  { name: 'Summer in Paris 100ml', category: '100ml',        sellPrice: 89, costPrice: 28, image: `${CDN}/summer-in-paris-bottle.jpg?v=1719492048` },
+  { name: 'Bedouin 30ml',          category: '30ml',         sellPrice: 49, costPrice: 15, image: `${CDN}/Bedouin-perfume.jpg?v=1719491941` },
+  { name: 'Bedouin 100ml',         category: '100ml',        sellPrice: 89, costPrice: 28, image: `${CDN}/Bedouin-perfume.jpg?v=1719491941` },
+  { name: 'Rub Al Khali 30ml',     category: '30ml',         sellPrice: 49, costPrice: 15, image: `${CDN}/Rub-al-khari-bottle.jpg?v=1719492019` },
+  { name: 'Rub Al Khali 100ml',    category: '100ml',        sellPrice: 89, costPrice: 28, image: `${CDN}/Rub-al-khari-bottle.jpg?v=1719492019` },
+  { name: 'Discovery Set',         category: 'Discovery Set',sellPrice: 39, costPrice: 12, image: `${CDN}/Untitled_design.png?v=1746527249` },
 ];
 const PRODUCT_NAMES = PRODUCTS.map(p => p.name);
 
@@ -77,12 +78,10 @@ const LOCKOUT_MS    = 15 * 60 * 1000;
 function checkRateLimit(ip) {
   const now = Date.now();
   const rec = loginAttempts.get(ip) || { count: 0, first: now, locked: 0 };
-  if (rec.locked && now < rec.locked) {
-    return { blocked: true, secsLeft: Math.ceil((rec.locked - now) / 1000) };
-  }
+  if (rec.locked && now < rec.locked) return { blocked: true, secsLeft: Math.ceil((rec.locked - now) / 1000) };
   if (now - rec.first > LOCKOUT_MS) { rec.count = 0; rec.first = now; rec.locked = 0; }
   loginAttempts.set(ip, rec);
-  return { blocked: false, rec };
+  return { blocked: false };
 }
 function recordFailure(ip) {
   const rec = loginAttempts.get(ip) || { count: 0, first: Date.now(), locked: 0 };
@@ -91,13 +90,7 @@ function recordFailure(ip) {
   loginAttempts.set(ip, rec);
 }
 function clearAttempts(ip) { loginAttempts.delete(ip); }
-
-setInterval(() => {
-  const now = Date.now();
-  for (const [ip, rec] of loginAttempts) {
-    if (now - rec.first > LOCKOUT_MS * 2) loginAttempts.delete(ip);
-  }
-}, 30 * 60 * 1000);
+setInterval(() => { const now = Date.now(); for (const [ip, r] of loginAttempts) if (now - r.first > LOCKOUT_MS * 2) loginAttempts.delete(ip); }, 30 * 60 * 1000);
 
 app.post('/api/auth', (req, res) => {
   const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket.remoteAddress || 'unknown';
@@ -105,18 +98,14 @@ app.post('/api/auth', (req, res) => {
   if (blocked) return res.status(429).json({ error: `Too many attempts. Try again in ${secsLeft}s.` });
   const { username, password } = req.body || {};
   if (!username || !password) return res.status(400).json({ error: 'Missing credentials' });
-  if (USERS[username.toLowerCase()] !== password) {
-    recordFailure(ip);
-    return res.status(401).json({ error: 'Invalid username or password' });
-  }
+  if (USERS[username.toLowerCase()] !== password) { recordFailure(ip); return res.status(401).json({ error: 'Invalid username or password' }); }
   clearAttempts(ip);
   res.json({ success: true, token: makeToken(username.toLowerCase()) });
 });
 
 app.post('/api/auth/verify', (req, res) => {
   const token = (req.headers.authorization || '').replace('Bearer ', '').trim();
-  const user  = verifyToken(token);
-  res.json({ valid: !!user, user });
+  res.json({ valid: !!verifyToken(token) });
 });
 
 // ── Week helpers ──────────────────────────────────────────────────────────────
@@ -147,27 +136,21 @@ function normalizeEntry(e) {
   if ('provided' in e) return { initialQty: e.provided || 0, soldQty: e.sold || 0, topUp: e.topUp || 0 };
   return { initialQty: e.initialQty || 0, soldQty: e.soldQty || 0, topUp: e.topUp || 0 };
 }
+function currentStock(e) { const n = normalizeEntry(e); return n.initialQty + n.topUp - n.soldQty; }
 
-function currentStock(e) {
-  const n = normalizeEntry(e);
-  return n.initialQty + n.topUp - n.soldQty;
-}
-
-// ── WhatsApp (CallMeBot) ──────────────────────────────────────────────────────
+// ── WhatsApp ──────────────────────────────────────────────────────────────────
 function buildWAMessage(shop, week, products) {
   const range = weekRange(week);
   const lines = [];
   for (const [product, vals] of Object.entries(products)) {
-    const n  = normalizeEntry(vals);
-    const cs = n.initialQty + n.topUp - n.soldQty;
+    const n = normalizeEntry(vals), cs = n.initialQty + n.topUp - n.soldQty;
     if (!n.initialQty && !n.soldQty && !n.topUp) continue;
     const parts = [];
     if (n.initialQty) parts.push(`Init: ${n.initialQty}`);
     if (n.soldQty)    parts.push(`Sold: ${n.soldQty}`);
-    if (n.topUp)      parts.push(`Top-Up: +${n.topUp}`);
+    if (n.topUp)      parts.push(`+${n.topUp}`);
     const icon = cs < 0 ? '⚠️' : cs <= LOW_STOCK_THRESHOLD ? '🔴' : '✅';
-    const stat = cs < 0 ? `${cs} OVER-SOLD` : cs === 0 ? 'Cleared' : `${cs} left`;
-    lines.push(`${icon} *${product}*\n   ${parts.join(' | ')} → ${stat}`);
+    lines.push(`${icon} *${product}*\n   ${parts.join(' | ')} → ${cs < 0 ? `${cs} OVER-SOLD` : cs === 0 ? 'Cleared' : `${cs} left`}`);
   }
   if (!lines.length) return null;
   const time = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
@@ -177,9 +160,7 @@ function buildWAMessage(shop, week, products) {
 async function sendWA(message) {
   const key = process.env.WA_API_KEY;
   if (!key) return;
-  try {
-    await fetch(`https://api.callmebot.com/whatsapp.php?phone=${WA_NUMBER}&text=${encodeURIComponent(message)}&apikey=${key}`);
-  } catch { /* silent */ }
+  try { await fetch(`https://api.callmebot.com/whatsapp.php?phone=${WA_NUMBER}&text=${encodeURIComponent(message)}&apikey=${key}`); } catch { /* silent */ }
 }
 
 async function addLog(entry) {
@@ -193,8 +174,8 @@ app.get('/api/shops', requireAuth, async (_, res) => {
   try {
     let shops = await storage.get('shops');
     if (!shops || shops.length === 0) {
-      const initialized = await storage.get('shops_initialized');
-      if (!initialized) {
+      const init = await storage.get('shops_initialized');
+      if (!init) {
         shops = [...DEFAULT_SHOPS];
         await storage.set('shops', shops);
         await storage.set('shops_initialized', true);
@@ -220,7 +201,7 @@ app.post('/api/shops', requireAuth, async (req, res) => {
 
 app.delete('/api/shops/:name', requireAuth, async (req, res) => {
   try {
-    const name  = decodeURIComponent(req.params.name);
+    const name = decodeURIComponent(req.params.name);
     const shops = await storage.get('shops');
     await storage.set('shops', shops.filter(s => s !== name));
     await addLog({ action: 'REMOVE_SHOP', shop: name });
@@ -230,9 +211,8 @@ app.delete('/api/shops/:name', requireAuth, async (req, res) => {
 
 // ── API: Contacts ─────────────────────────────────────────────────────────────
 app.get('/api/contacts', requireAuth, async (_, res) => {
-  try {
-    res.json(await storage.get('contacts') || {});
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  try { res.json((await storage.get('contacts')) || {}); }
+  catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.post('/api/contacts', requireAuth, async (req, res) => {
@@ -251,10 +231,8 @@ app.get('/api/products', requireAuth, (_, res) => res.json(PRODUCTS));
 
 // ── API: Stock ────────────────────────────────────────────────────────────────
 app.get('/api/stock/:week', requireAuth, async (req, res) => {
-  try {
-    const stock = await storage.get('stock');
-    res.json(stock[req.params.week] || {});
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  try { const stock = await storage.get('stock'); res.json(stock[req.params.week] || {}); }
+  catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.post('/api/stock/bulk', requireAuth, async (req, res) => {
@@ -289,15 +267,12 @@ app.get('/api/dashboard/:week', requireAuth, async (req, res) => {
     const [stock, shops] = await Promise.all([storage.get('stock'), storage.get('shops')]);
     const weekData = stock[week] || {};
 
-    let totalDelivered = 0, totalSold = 0, totalRemaining = 0;
-    const lowStock       = [];
-    const overSold       = [];
-    const productSummary = {};
-    const shopStatuses   = [];
+    let totalDelivered=0, totalSold=0, totalRemaining=0, totalRevenue=0, totalCOGS=0;
+    const lowStock=[], overSold=[], productSummary={}, shopStatuses=[];
 
     for (const shop of shops) {
       const shopData = weekData[shop] || {};
-      let hasAny = false, shopSold = 0, shopRemain = 0, shopOk = true, lastSaved = null;
+      let hasAny=false, shopSold=0, shopRemain=0, shopOk=true, lastSaved=null;
 
       for (const p of PRODUCTS) {
         const raw  = shopData[p.name];
@@ -308,36 +283,34 @@ app.get('/api/dashboard/:week', requireAuth, async (req, res) => {
           hasAny = true;
           totalDelivered += norm.initialQty + norm.topUp;
           totalSold      += norm.soldQty;
+          totalRevenue   += norm.soldQty * (p.sellPrice || 0);
+          totalCOGS      += norm.soldQty * (p.costPrice || 0);
           shopSold       += norm.soldQty;
           shopRemain     += rem;
-          if (!productSummary[p.name]) productSummary[p.name] = { delivered: 0, sold: 0, remaining: 0, category: p.category };
-          productSummary[p.name].delivered += norm.initialQty + norm.topUp;
-          productSummary[p.name].sold      += norm.soldQty;
-          productSummary[p.name].remaining += rem;
-          if (rem < 0)                         { overSold.push({ shop, product: p.name, remaining: rem }); shopOk = false; }
-          else if (rem <= LOW_STOCK_THRESHOLD)  { lowStock.push({ shop, product: p.name, remaining: rem }); shopOk = false; }
+          if (!productSummary[p.name]) productSummary[p.name] = { delivered:0, sold:0, remaining:0, revenue:0, cogs:0, category:p.category, image:p.image };
+          productSummary[p.name].delivered  += norm.initialQty + norm.topUp;
+          productSummary[p.name].sold       += norm.soldQty;
+          productSummary[p.name].remaining  += rem;
+          productSummary[p.name].revenue    += norm.soldQty * (p.sellPrice || 0);
+          productSummary[p.name].cogs       += norm.soldQty * (p.costPrice || 0);
+          if (rem < 0)                        { overSold.push({ shop, product:p.name, remaining:rem }); shopOk=false; }
+          else if (rem <= LOW_STOCK_THRESHOLD){ lowStock.push({ shop, product:p.name, remaining:rem }); shopOk=false; }
           if (!lastSaved || (raw?.savedAt && raw.savedAt > lastSaved)) lastSaved = raw?.savedAt;
         }
       }
       totalRemaining += shopRemain;
-      shopStatuses.push({ shop, hasData: hasAny, sold: shopSold, remaining: shopRemain, ok: shopOk, lastSaved });
+      shopStatuses.push({ shop, hasData:hasAny, sold:shopSold, remaining:shopRemain, ok:shopOk, lastSaved });
     }
 
-    res.json({
-      week,
-      range: weekRange(week),
-      totalShops: shops.length,
-      shopsReporting: shopStatuses.filter(s => s.hasData).length,
-      totalDelivered,
-      totalSold,
-      totalRemaining,
-      lowStockCount: lowStock.length,
-      overSoldCount: overSold.length,
-      lowStock,
-      overSold,
-      productSummary,
-      shopStatuses,
-    });
+    const grossProfit = totalRevenue - totalCOGS;
+    const margin = totalRevenue > 0 ? Math.round((grossProfit / totalRevenue) * 100) : 0;
+
+    res.json({ week, range:weekRange(week), totalShops:shops.length,
+      shopsReporting: shopStatuses.filter(s=>s.hasData).length,
+      totalDelivered, totalSold, totalRemaining,
+      totalRevenue, totalCOGS, grossProfit, margin,
+      lowStockCount:lowStock.length, overSoldCount:overSold.length,
+      lowStock, overSold, productSummary, shopStatuses });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -350,11 +323,7 @@ app.get('/api/logs', requireAuth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// ── API: Week ─────────────────────────────────────────────────────────────────
-app.get('/api/week', (_, res) => {
-  const week = getWeekId();
-  res.json({ week, range: weekRange(week) });
-});
+app.get('/api/week', (_, res) => { const week = getWeekId(); res.json({ week, range: weekRange(week) }); });
 
 // ── Report: Excel ─────────────────────────────────────────────────────────────
 async function buildWorkbook(week) {
@@ -362,31 +331,30 @@ async function buildWorkbook(week) {
   const weekData = stock[week] || {};
 
   const wb = new ExcelJS.Workbook();
-  wb.creator = 'Flawless Inventory';
-  wb.created = new Date();
+  wb.creator = 'Flawless Inventory'; wb.created = new Date();
 
-  const ws = wb.addWorksheet(`Week ${week}`, { pageSetup: { fitToPage: true, fitToWidth: 1 } });
+  const ws = wb.addWorksheet(`Week ${week}`, { pageSetup: { fitToPage:true, fitToWidth:1 } });
 
-  ws.mergeCells('A1:H1');
+  ws.mergeCells('A1:J1');
   const title = ws.getCell('A1');
-  title.value     = `FLAWLESS PERFUMES — Stock Report ${week}  (${weekRange(week)})`;
-  title.font      = { name: 'Calibri', size: 14, bold: true, color: { argb: 'FF1A1A1A' } };
-  title.fill      = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE1CBBD' } };
-  title.alignment = { horizontal: 'center', vertical: 'middle' };
+  title.value = `FLAWLESS PERFUMES — Stock Report ${week}  (${weekRange(week)})`;
+  title.font  = { name:'Calibri', size:14, bold:true, color:{argb:'FF1A1A1A'} };
+  title.fill  = { type:'pattern', pattern:'solid', fgColor:{argb:'FFE1CBBD'} };
+  title.alignment = { horizontal:'center', vertical:'middle' };
   ws.getRow(1).height = 28;
 
-  const headers = ['Shop', 'Product', 'Category', 'Initial Qty', 'Qty Sold', 'Top-Up', 'Current Stock', 'Status'];
-  ws.columns = headers.map((h, i) => ({ header: h, key: h, width: [28, 26, 16, 14, 14, 14, 16, 14][i] }));
+  const headers = ['Shop','Product','Category','Initial Qty','Qty Sold','Top-Up','Remaining','Sell Price (€)','Revenue (€)','Status'];
+  ws.columns = headers.map((h,i) => ({ header:h, key:h, width:[28,26,16,13,11,11,13,14,13,14][i] }));
   const hRow = ws.getRow(2);
   hRow.values = headers;
   hRow.eachCell(c => {
-    c.fill      = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A1A1A' } };
-    c.font      = { name: 'Calibri', bold: true, color: { argb: 'FFE1CBBD' }, size: 11 };
-    c.alignment = { horizontal: 'center', vertical: 'middle' };
+    c.fill = { type:'pattern', pattern:'solid', fgColor:{argb:'FF1A1A1A'} };
+    c.font = { name:'Calibri', bold:true, color:{argb:'FFE1CBBD'}, size:11 };
+    c.alignment = { horizontal:'center', vertical:'middle' };
   });
   ws.getRow(2).height = 22;
 
-  let rowIdx = 3, hasMismatches = false;
+  let rowIdx=3, hasMismatches=false;
   shops.forEach(shop => {
     PRODUCT_NAMES.forEach(product => {
       const pObj = PRODUCTS.find(p => p.name === product);
@@ -396,39 +364,72 @@ async function buildWorkbook(week) {
       const hasD = e.initialQty > 0 || e.soldQty > 0 || e.topUp > 0;
       const bad  = hasD && cs < 0;
       const low  = hasD && !bad && cs <= LOW_STOCK_THRESHOLD;
+      const rev  = e.soldQty * (pObj?.sellPrice || 0);
       if (bad) hasMismatches = true;
 
       const row = ws.getRow(rowIdx);
-      row.values = [shop, product, pObj?.category || '', e.initialQty, e.soldQty, e.topUp,
-        hasD ? cs : '—', !hasD ? 'Not entered' : bad ? '⚠ OVER-SOLD' : low ? '⚠ LOW STOCK' : '✓ OK'];
+      row.values = [shop, product, pObj?.category||'', e.initialQty, e.soldQty, e.topUp,
+        hasD ? cs : '—', pObj?.sellPrice||0, hasD ? rev : '—',
+        !hasD ? 'Not entered' : bad ? '⚠ OVER-SOLD' : low ? '⚠ LOW' : '✓ OK'];
       row.eachCell((c, col) => {
-        c.font      = { name: 'Calibri', size: 10, color: { argb: bad ? 'FFFFFFFF' : 'FF1A1A1A' } };
-        c.alignment = { horizontal: col <= 3 ? 'left' : 'center', vertical: 'middle' };
+        c.font = { name:'Calibri', size:10, color:{argb: bad?'FFFFFFFF':'FF1A1A1A'} };
+        c.alignment = { horizontal: col<=3?'left':'center', vertical:'middle' };
         c.fill = bad
-          ? { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF83A3A' } }
+          ? { type:'pattern', pattern:'solid', fgColor:{argb:'FFF83A3A'} }
           : low
-            ? { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFF3CD' } }
-            : { type: 'pattern', pattern: 'solid', fgColor: { argb: rowIdx % 2 === 0 ? 'FFF9F0EC' : 'FFFFFFFF' } };
-        if (bad) c.font = { ...c.font, bold: true };
+            ? { type:'pattern', pattern:'solid', fgColor:{argb:'FFFFF3CD'} }
+            : { type:'pattern', pattern:'solid', fgColor:{argb: rowIdx%2===0?'FFF9F0EC':'FFFFFFFF'} };
+        if (bad) c.font = { ...c.font, bold:true };
       });
-      row.getCell(8).font = {
-        name: 'Calibri', size: 10, bold: bad || low,
-        color: { argb: bad ? 'FFFFFFFF' : low ? 'FFCC8800' : !hasD ? 'FF888888' : 'FF00A341' },
-      };
+      row.getCell(10).font = { name:'Calibri', size:10, bold:bad||low,
+        color:{argb: bad?'FFFFFFFF':low?'FFCC8800':!hasD?'FF888888':'FF00A341'} };
       row.height = 18;
       rowIdx++;
     });
   });
 
+  // Financial summary row
   rowIdx++;
-  ws.mergeCells(`A${rowIdx}:H${rowIdx}`);
+  let totalRev=0, totalCOGS_=0;
+  shops.forEach(shop => {
+    PRODUCT_NAMES.forEach(product => {
+      const pObj = PRODUCTS.find(p=>p.name===product);
+      const raw  = weekData[shop]?.[product];
+      const e    = normalizeEntry(raw);
+      totalRev   += e.soldQty * (pObj?.sellPrice||0);
+      totalCOGS_ += e.soldQty * (pObj?.costPrice||0);
+    });
+  });
+
+  ws.mergeCells(`A${rowIdx}:G${rowIdx}`);
+  ws.getCell(`A${rowIdx}`).value = `Week ${week} Financial Summary`;
+  ws.getCell(`A${rowIdx}`).font  = { name:'Calibri', bold:true, size:11, color:{argb:'FF1A1A1A'} };
+  ws.getCell(`A${rowIdx}`).fill  = { type:'pattern', pattern:'solid', fgColor:{argb:'FFE1CBBD'} };
+  ws.getCell(`A${rowIdx}`).alignment = { horizontal:'center' };
+
+  rowIdx++;
+  const summaryRows = [
+    ['Total Revenue', `€${totalRev.toFixed(2)}`],
+    ['Total COGS', `€${totalCOGS_.toFixed(2)}`],
+    ['Gross Profit', `€${(totalRev-totalCOGS_).toFixed(2)}`],
+    ['Margin %', totalRev>0 ? `${Math.round((totalRev-totalCOGS_)/totalRev*100)}%` : '—'],
+  ];
+  summaryRows.forEach(([label, val]) => {
+    ws.getCell(`A${rowIdx}`).value = label;
+    ws.getCell(`B${rowIdx}`).value = val;
+    ws.getCell(`A${rowIdx}`).font = { name:'Calibri', size:10, bold:true };
+    ws.getCell(`B${rowIdx}`).font = { name:'Calibri', size:10 };
+    rowIdx++;
+  });
+
+  ws.mergeCells(`A${rowIdx}:J${rowIdx}`);
   const footer = ws.getCell(`A${rowIdx}`);
-  footer.value     = hasMismatches
-    ? '⚠  Rows in RED indicate over-sold stock. Please review immediately.'
-    : `✓  All stock counts balance correctly for week ${week}.`;
-  footer.font      = { name: 'Calibri', italic: true, size: 10, color: { argb: hasMismatches ? 'FFF83A3A' : 'FF00A341' } };
-  footer.fill      = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE1CBBD' } };
-  footer.alignment = { horizontal: 'center' };
+  footer.value = hasMismatches
+    ? '⚠  Rows in RED = over-sold. Please review immediately.'
+    : `✓  All stock counts balance for week ${week}.`;
+  footer.font = { name:'Calibri', italic:true, size:10, color:{argb: hasMismatches?'FFF83A3A':'FF00A341'} };
+  footer.fill = { type:'pattern', pattern:'solid', fgColor:{argb:'FFE1CBBD'} };
+  footer.alignment = { horizontal:'center' };
 
   return wb;
 }
@@ -445,69 +446,40 @@ app.get('/api/report/:week', requireAuth, async (req, res) => {
 
 // ── Email ─────────────────────────────────────────────────────────────────────
 async function sendWeeklyReport(week) {
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    throw new Error('EMAIL_USER / EMAIL_PASS not configured.');
-  }
-  const wb     = await buildWorkbook(week);
-  const buffer = await wb.xlsx.writeBuffer();
-  const range  = weekRange(week);
-
-  const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
-  });
-
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) throw new Error('EMAIL_USER / EMAIL_PASS not configured.');
+  const wb = await buildWorkbook(week), buffer = await wb.xlsx.writeBuffer(), range = weekRange(week);
+  const transporter = nodemailer.createTransport({ service:'gmail', auth:{ user:process.env.EMAIL_USER, pass:process.env.EMAIL_PASS } });
   await transporter.sendMail({
-    from:    `"Flawless Inventory" <${process.env.EMAIL_USER}>`,
-    to:      REPORT_EMAIL,
+    from: `"Flawless Inventory" <${process.env.EMAIL_USER}>`,
+    to:   REPORT_EMAIL,
     subject: `Flawless Perfumes — Weekly Stock Report ${week}`,
-    html: `
-      <div style="font-family:sans-serif;max-width:640px;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e0d0c8">
-        <div style="background:#E1CBBD;padding:32px;text-align:center">
-          <img src="https://flawlessperfumes.com/cdn/shop/files/Flawless_Logo.svg?v=1711183368&width=220" style="height:60px;width:auto" alt="Flawless">
-        </div>
-        <div style="padding:32px">
-          <h2 style="font-size:20px;font-weight:700;color:#1A1A1A;margin:0 0 8px">Weekly Stock Report — ${week}</h2>
-          <p style="color:#9B6D57;margin:0 0 24px;font-size:14px">${range}</p>
-          <p style="line-height:1.7;color:#1A1A1A">Please find the weekly inventory report attached as an Excel spreadsheet.</p>
-          <p style="line-height:1.7;color:#1A1A1A">Rows <strong style="color:#F83A3A">highlighted in red</strong> are over-sold. Rows in <strong style="color:#CC8800">yellow</strong> are low stock (≤${LOW_STOCK_THRESHOLD} units).</p>
-        </div>
-        <div style="background:#E1CBBD;padding:16px;text-align:center">
-          <p style="margin:0;font-size:11px;color:#9B6D57">Sent automatically by Flawless Inventory Management · <a href="https://wa.me/${WA_NUMBER}" style="color:#9B6D57">WhatsApp</a></p>
-        </div>
-      </div>`,
-    attachments: [{
-      filename: `Flawless-Stock-${week}.xlsx`,
-      content:  buffer,
-      contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    }],
+    html: `<div style="font-family:sans-serif;max-width:640px;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e0d0c8">
+      <div style="background:#E1CBBD;padding:28px;text-align:center"><img src="https://flawlessperfumes.com/cdn/shop/files/Flawless_Logo.svg?v=1711183368&width=220" style="height:56px;width:auto" alt="Flawless"></div>
+      <div style="padding:28px">
+        <h2 style="font-size:20px;color:#1A1A1A;margin:0 0 6px">Weekly Stock Report — ${week}</h2>
+        <p style="color:#9B6D57;margin:0 0 20px;font-size:13px">${range}</p>
+        <p style="line-height:1.7;color:#1A1A1A">Find the full stock report attached. Red rows = over-sold · Yellow rows = low stock (≤${LOW_STOCK_THRESHOLD} units).</p>
+        <p style="line-height:1.7;color:#1A1A1A">The Excel file includes revenue and cost of sales per product.</p>
+      </div>
+      <div style="background:#E1CBBD;padding:14px;text-align:center;font-size:11px;color:#9B6D57">Flawless Inventory · <a href="https://wa.me/${WA_NUMBER}" style="color:#9B6D57">WhatsApp</a></div>
+    </div>`,
+    attachments: [{ filename:`Flawless-Stock-${week}.xlsx`, content:buffer, contentType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }],
   });
-  await addLog({ action: 'EMAIL_SENT', week, to: REPORT_EMAIL });
+  await addLog({ action:'EMAIL_SENT', week, to:REPORT_EMAIL });
 }
 
 app.post('/api/send-report', requireAuth, async (req, res) => {
   const week = req.body.week || getWeekId();
-  try {
-    await sendWeeklyReport(week);
-    res.json({ success: true, message: `Report for ${week} sent to ${REPORT_EMAIL}` });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  try { await sendWeeklyReport(week); res.json({ success:true, message:`Report for ${week} sent to ${REPORT_EMAIL}` }); }
+  catch (e) { res.status(500).json({ error:e.message }); }
 });
 
-// ── Vercel Cron ───────────────────────────────────────────────────────────────
 app.get('/api/cron', async (req, res) => {
   const secret = process.env.CRON_SECRET;
-  if (secret && req.headers.authorization !== `Bearer ${secret}`) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
+  if (secret && req.headers.authorization !== `Bearer ${secret}`) return res.status(401).json({ error:'Unauthorized' });
   const week = getWeekId();
-  try {
-    await sendWeeklyReport(week);
-    await addLog({ action: 'CRON_EMAIL', week });
-    res.json({ success: true, week });
-  } catch (e) {
-    console.error('[cron]', e.message);
-    res.status(500).json({ error: e.message });
-  }
+  try { await sendWeeklyReport(week); await addLog({ action:'CRON_EMAIL', week }); res.json({ success:true, week }); }
+  catch (e) { console.error('[cron]', e.message); res.status(500).json({ error:e.message }); }
 });
 
 module.exports = { app, getWeekId, sendWeeklyReport };

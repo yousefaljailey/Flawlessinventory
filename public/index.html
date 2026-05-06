@@ -1221,8 +1221,18 @@ function toggleAcc(shop) {
 
 function onInp(e) {
   const inp=e.target; if(!inp.classList.contains('num-inp')&&!inp.classList.contains('sc-inp')) return;
-  const row=inp.closest('[data-shop]'); if(!row) return;
-  saveDraft(row.dataset.shop); // persist immediately so navigation never loses changes
+  const row=inp.closest('[data-prod]'); if(!row) return;
+  const shop=row.dataset.shop, prod=row.dataset.prod, field=inp.dataset.f;
+
+  // Keep desktop table and mobile card inputs in perfect sync so saving either always works
+  if(shop && prod && field) {
+    const card=document.getElementById(`acc-${sid(shop)}`);
+    if(card) card.querySelectorAll(`[data-f="${field}"]`).forEach(other=>{
+      if(other!==inp && other.closest('[data-prod]')?.dataset.prod===prod) other.value=inp.value;
+    });
+  }
+
+  saveDraft(shop);
   // recalc remaining in this row
   const iq=Number(row.querySelector('[data-f="initialQty"]').value)||0;
   const sq=Number(row.querySelector('[data-f="soldQty"]').value)||0;
@@ -1245,15 +1255,19 @@ function onInp(e) {
 async function saveShop(shop,silent=false) {
   const id=sid(shop),card=document.getElementById(`acc-${id}`);
   if(!card) return false;
-  const products={};
-  // collect from both table rows and mobile cards
-  card.querySelectorAll('tr[data-prod],div[data-prod]').forEach(row=>{
+  // Use a Map so each product is stored exactly once; last write wins.
+  // Desktop rows come first in DOM, mobile cards come second — after syncing in onInp
+  // both always hold identical values, so order doesn't matter.
+  const productMap=new Map();
+  card.querySelectorAll('tr[data-prod],.stk-card[data-prod]').forEach(row=>{
     const p=row.dataset.prod; if(!p) return;
-    const iq=Number(row.querySelector('[data-f="initialQty"]')?.value)||0;
-    const sq=Number(row.querySelector('[data-f="soldQty"]')?.value)||0;
-    const tu=Number(row.querySelector('[data-f="topUp"]')?.value)||0;
-    if(!products[p]||(iq||sq||tu)) products[p]={initialQty:iq,soldQty:sq,topUp:tu};
+    productMap.set(p,{
+      initialQty:Number(row.querySelector('[data-f="initialQty"]')?.value)||0,
+      soldQty:   Number(row.querySelector('[data-f="soldQty"]')?.value)||0,
+      topUp:     Number(row.querySelector('[data-f="topUp"]')?.value)||0,
+    });
   });
+  const products=Object.fromEntries(productMap);
   const res=await apiPost('/api/stock/bulk',{shop,week:S.week,products});
   if(res.success){
     if(!S.stock[shop]) S.stock[shop]={};

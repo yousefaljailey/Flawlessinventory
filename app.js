@@ -539,6 +539,22 @@ app.post('/api/send-report', requireAuth, async (req, res) => {
   catch (e) { res.status(500).json({ error:e.message }); }
 });
 
+// ── API: Admin Reset ──────────────────────────────────────────────────────────
+app.post('/api/admin/reset', requireAuth, async (_, res) => {
+  try {
+    await Promise.all([
+      storage.set('stock', {}),
+      storage.set('logs', []),
+      storage.set('contacts', {}),
+      storage.set('shops', []),
+      storage.set('shops_initialized', false),
+      storage.set('access_log', []),
+    ]);
+    await addLog({ action: 'ADMIN_RESET', note: 'All data cleared' });
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 app.get('/api/cron', async (req, res) => {
   const secret = process.env.CRON_SECRET;
   if (secret && req.headers.authorization !== `Bearer ${secret}`) return res.status(401).json({ error:'Unauthorized' });

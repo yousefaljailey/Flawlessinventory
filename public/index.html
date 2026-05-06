@@ -328,6 +328,26 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 .log-desc{font-size:12px;color:var(--cream);margin-left:7px}
 .log-sub{font-size:10px;color:var(--muted);margin-top:2px}
 
+/* ─ ONLINE SALES ──────────────────────────────────────────────────────────── */
+.ol-layout{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+.ol-left,.ol-right{}
+.drop-zone{
+  border:2px dashed var(--border-h);border-radius:var(--r);
+  padding:40px 24px;text-align:center;cursor:pointer;
+  transition:all .2s;background:var(--s1);margin-bottom:16px;
+  position:relative;
+}
+.drop-zone:hover,.drop-zone.drag-over{border-color:var(--gold);background:var(--gold-dim)}
+.dz-icon{font-size:36px;margin-bottom:10px}
+.dz-title{font-family:var(--font-d);font-size:18px;font-weight:600;color:var(--cream);margin-bottom:6px}
+.dz-sub{font-size:12px;color:var(--muted)}
+.map-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.map-field{}
+@media(max-width:768px){
+  .ol-layout{grid-template-columns:1fr}
+  .map-row{grid-template-columns:1fr}
+}
+
 /* ─ EMPTY STATE ───────────────────────────────────────────────────────────── */
 .empty{text-align:center;padding:44px 24px;color:var(--muted)}
 .empty .ei{font-size:34px;margin-bottom:10px}
@@ -431,6 +451,9 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Workflow
       <span class="nav-dot" id="wf-dot" style="display:none"></span>
     </button>
+    <button class="nav-btn" data-view="online" onclick="nav('online')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>Online Sales
+    </button>
     <div class="sb-section">Reporting</div>
     <button class="nav-btn" data-view="reports" onclick="nav('reports')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Reports
@@ -475,9 +498,10 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
     <!-- Financial KPIs -->
     <div class="section-lbl">Financial — This Week</div>
     <div class="kpi-row" id="fin-kpis">
-      <div class="kpi k-green"><div class="kpi-label">Revenue</div><div class="kpi-val" id="k-rev">€—</div><div class="kpi-sub">units sold × price</div></div>
-      <div class="kpi k-amber"><div class="kpi-label">Cost of Sales</div><div class="kpi-val" id="k-cogs">€—</div><div class="kpi-sub">units sold × cost</div></div>
-      <div class="kpi k-gold"><div class="kpi-label">Gross Profit</div><div class="kpi-val" id="k-profit">€—</div><div class="kpi-sub" id="k-margin">margin —%</div></div>
+      <div class="kpi k-green"><div class="kpi-label">Retail Revenue</div><div class="kpi-val" id="k-rev">€0</div><div class="kpi-sub">sold × sell price</div></div>
+      <div class="kpi k-blue"><div class="kpi-label">Online Revenue</div><div class="kpi-val" id="k-online-rev">€0</div><div class="kpi-sub" id="k-online-sub">0 units online</div></div>
+      <div class="kpi k-amber"><div class="kpi-label">Cost of Sales</div><div class="kpi-val" id="k-cogs">€0</div><div class="kpi-sub">total × cost price</div></div>
+      <div class="kpi k-gold"><div class="kpi-label">Gross Profit</div><div class="kpi-val" id="k-profit">€0</div><div class="kpi-sub" id="k-margin">margin 0%</div></div>
     </div>
 
     <!-- Operational KPIs -->
@@ -622,6 +646,90 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
     <div class="log-list" id="log-list"></div>
   </div>
 
+  <!-- ONLINE SALES -->
+  <div class="view" id="v-online">
+    <div class="view-hd">
+      <div>
+        <div class="eyebrow">E-commerce</div>
+        <h1>Online Sales</h1>
+        <div class="sub">Separate from retail · drag &amp; drop your Shopify/CSV export</div>
+      </div>
+      <div class="view-actions">
+        <div class="week-nav">
+          <button class="wk-btn" onclick="shiftW(-1)">‹</button>
+          <div class="wk-lbl"><strong id="ol-wk">–</strong><small id="ol-rng">–</small></div>
+          <button class="wk-btn" onclick="shiftW(1)">›</button>
+        </div>
+        <button class="btn btn-danger btn-sm" onclick="clearOnline()">Clear This Week</button>
+      </div>
+    </div>
+
+    <div class="ol-layout">
+      <!-- LEFT: Drop zone -->
+      <div class="ol-left">
+        <div class="section-lbl" style="margin-top:0">Import from File</div>
+        <div class="drop-zone" id="drop-zone">
+          <div class="dz-icon">📂</div>
+          <div class="dz-title">Drop CSV file here</div>
+          <div class="dz-sub">or click to browse · Shopify export &amp; simple CSV supported</div>
+          <input type="file" id="file-inp" accept=".csv,.txt" style="display:none" onchange="handleFile(this.files[0])">
+        </div>
+
+        <!-- Column mapping (shown after file drop) -->
+        <div id="col-map" style="display:none">
+          <div class="section-lbl">Match Columns</div>
+          <div class="map-row">
+            <div class="map-field">
+              <label class="field-lbl">Product name column</label>
+              <select class="field-inp" id="map-prod" style="cursor:pointer"></select>
+            </div>
+            <div class="map-field">
+              <label class="field-lbl">Quantity column</label>
+              <select class="field-inp" id="map-qty" style="cursor:pointer"></select>
+            </div>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="reparse()" style="margin-top:8px">Re-parse with these columns</button>
+        </div>
+
+        <!-- Preview table -->
+        <div id="import-preview" style="display:none">
+          <div class="section-lbl">Preview — <span id="preview-count">0</span> products matched</div>
+          <div class="card" style="overflow:hidden;padding:0;margin-bottom:14px">
+            <table class="data-tbl" id="preview-tbl">
+              <thead><tr><th>Product</th><th style="text-align:center">Qty</th><th style="text-align:center">Revenue</th><th style="text-align:center">Status</th></tr></thead>
+              <tbody id="preview-body"></tbody>
+            </table>
+          </div>
+          <div id="unmatched-warn" style="display:none;padding:10px 13px;background:var(--amber-bg);border:1px solid rgba(212,136,42,.2);border-radius:var(--r-sm);font-size:12px;color:var(--amber);margin-bottom:12px"></div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-primary" onclick="importOnline()">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Add to Week
+            </button>
+            <button class="btn btn-ghost btn-sm" onclick="cancelImport()">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Current week's online sales -->
+      <div class="ol-right">
+        <div class="section-lbl" style="margin-top:0">This Week's Online Sales</div>
+        <div id="online-summary-kpis" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+          <div class="kpi k-blue" style="padding:14px"><div class="kpi-label">Units Sold</div><div class="kpi-val" id="ol-units" style="font-size:30px">0</div></div>
+          <div class="kpi k-green" style="padding:14px"><div class="kpi-label">Revenue</div><div class="kpi-val" id="ol-rev" style="font-size:30px">€0</div></div>
+        </div>
+        <div class="card" style="overflow:hidden;padding:0">
+          <table class="data-tbl" id="online-tbl">
+            <thead><tr><th style="width:40px"></th><th>Product</th><th style="text-align:center">Units</th><th style="text-align:center">Revenue</th></tr></thead>
+            <tbody id="online-body"><tr><td colspan="4" style="text-align:center;padding:28px;color:var(--muted)">No online sales this week</td></tr></tbody>
+          </table>
+        </div>
+        <div class="section-lbl">Import History</div>
+        <div id="online-log" style="font-size:12px;color:var(--muted)">No imports yet this week</div>
+      </div>
+    </div>
+  </div>
+
 </div><!-- /main -->
 
 <!-- MOBILE BOTTOM NAV -->
@@ -630,6 +738,7 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
   <button class="bn-btn" data-view="stock" onclick="nav('stock')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><line x1="2" y1="11" x2="22" y2="11"/></svg>Stock</button>
   <button class="bn-btn" data-view="shops" onclick="nav('shops')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Shops</button>
   <button class="bn-btn" data-view="workflow" onclick="nav('workflow')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Workflow</button>
+  <button class="bn-btn" data-view="online" onclick="nav('online')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>Online</button>
   <button class="bn-btn" data-view="reports" onclick="nav('reports')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Reports</button>
 </nav>
 </div><!-- /app -->
@@ -746,6 +855,7 @@ function nav(v) {
   if(v==='workflow'){loadManual();renderWF();}
   if(v==='reports') renderReports();
   if(v==='logs')    loadLogs();
+  if(v==='online')  loadOnlineView();
 }
 function openSb()  { document.getElementById('sidebar').classList.add('open'); document.getElementById('sb-overlay').classList.add('show'); }
 function closeSb() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sb-overlay').classList.remove('show'); }
@@ -757,7 +867,7 @@ function setWeek(w) {
   S.week=w; const rng=weekRange(w);
   document.getElementById('sb-week').innerHTML=`Week <strong>${w}</strong>`;
   document.getElementById('mob-week').textContent=w;
-  [['dash-wk',w],['dash-rng',rng],['stk-wk',w],['stk-rng',rng],['wf-wk',w],['wf-rng',rng]].forEach(([id,v])=>{ const el=document.getElementById(id); if(el) el.textContent=v; });
+  [['dash-wk',w],['dash-rng',rng],['stk-wk',w],['stk-rng',rng],['wf-wk',w],['wf-rng',rng],['ol-wk',w],['ol-rng',rng]].forEach(([id,v])=>{ const el=document.getElementById(id); if(el) el.textContent=v; });
   const sel=document.getElementById('rpt-week-sel');
   if(sel) sel.innerHTML=recentWeeks(16).map(wk=>`<option value="${wk}"${wk===w?' selected':''}>${wk} — ${weekRange(wk)}</option>`).join('');
   loadManual();
@@ -783,7 +893,21 @@ async function boot() {
   S.shops=Array.isArray(shops)?shops:[];
   S.contacts=contacts||{};
   S.stock=stock||{};
+  // Load online sales from localStorage
+  const olData = loadOnlineCache();
+  const {rev:olRev,units:olUnits} = getOnlineRevenue(olData);
+  S.onlineSales=olData; S.onlineRevenue=olRev; S.onlineUnits=olUnits;
   loadDash(); nav('dash');
+}
+
+// Navigate to stock view AND auto-open a specific shop accordion
+function navToShop(shop) {
+  S.expanded.add(shop);   // renderStock() will expand this shop
+  nav('stock');
+  setTimeout(() => {
+    const card = document.getElementById(`acc-${sid(shop)}`);
+    if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 120);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -794,10 +918,13 @@ async function loadDash() {
   if(!d||!d.week) return;
   S.dash=d;
   // Financial
-  document.getElementById('k-rev').textContent    = fmtEur(d.totalRevenue||0);
-  document.getElementById('k-cogs').textContent   = fmtEur(d.totalCOGS||0);
-  document.getElementById('k-profit').textContent = fmtEur(d.grossProfit||0);
-  document.getElementById('k-margin').textContent = `margin ${d.margin||0}%`;
+  const onlineRev = S.onlineRevenue || 0;
+  document.getElementById('k-rev').textContent         = fmtEur(d.totalRevenue||0);
+  document.getElementById('k-online-rev').textContent  = fmtEur(onlineRev);
+  document.getElementById('k-online-sub').textContent  = `${S.onlineUnits||0} units online`;
+  document.getElementById('k-cogs').textContent        = fmtEur(d.totalCOGS||0);
+  document.getElementById('k-profit').textContent      = fmtEur((d.grossProfit||0)+onlineRev);
+  document.getElementById('k-margin').textContent      = `margin ${d.margin||0}%`;
   // Operational
   const pct=d.totalShops>0?Math.round(d.shopsReporting/d.totalShops*100):0;
   document.getElementById('k-rep').textContent     = d.shopsReporting;
@@ -817,7 +944,7 @@ async function loadDash() {
   else g.innerHTML=d.shopStatuses.map(s=>{
     const cls=!s.hasData?'empty':s.ok?'ok':d.overSold?.some(o=>o.shop===s.shop)?'err':'warn';
     const badge=!s.hasData?'<span class="badge b-empty">Not entered</span>':!s.ok?'<span class="badge b-warn">⚠ Alert</span>':'<span class="badge b-ok">✓ Good</span>';
-    return `<div class="ssc ${cls}" onclick="nav('stock')" title="Click to enter stock">
+    return `<div class="ssc ${cls}" data-shop="${esc(s.shop)}" onclick="navToShop(this.dataset.shop)" title="Click to open stock entry">
       <div class="ssc-name">${esc(s.shop)}</div>
       <div class="ssc-row"><div class="ssc-stat">Sold <strong>${s.sold}</strong> · Left <strong>${s.remaining}</strong></div>${badge}</div>
       <div class="ssc-last">Updated: ${fmtDate(s.lastSaved)}</div>
@@ -1232,6 +1359,224 @@ function renderLogs(){
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// ONLINE SALES
+// ─────────────────────────────────────────────────────────────────────────────
+// Storage: S.onlineSales = { productName: qty }  for current week (in-memory cache)
+// Persisted in localStorage under fl_online_<week>
+
+function getOnlineKey(w) { return `fl_online_${w||S.week}`; }
+
+function loadOnlineCache() {
+  try { return JSON.parse(localStorage.getItem(getOnlineKey())||'{}'); }
+  catch { return {}; }
+}
+function saveOnlineCache(data) {
+  localStorage.setItem(getOnlineKey(), JSON.stringify(data));
+}
+
+function getOnlineRevenue(data) {
+  let rev=0, units=0;
+  Object.entries(data||{}).forEach(([name,qty])=>{
+    const p=S.products.find(x=>x.name===name);
+    rev += qty*(p?.sellPrice||0);
+    units += qty;
+  });
+  return {rev,units};
+}
+
+function loadOnlineView() {
+  const data = loadOnlineCache();
+  renderOnlineTable(data);
+  const {rev,units} = getOnlineRevenue(data);
+  S.onlineSales = data; S.onlineRevenue = rev; S.onlineUnits = units;
+  document.getElementById('ol-units').textContent = units;
+  document.getElementById('ol-rev').textContent   = fmtEur(rev);
+}
+
+function renderOnlineTable(data) {
+  const body = document.getElementById('online-body');
+  const entries = Object.entries(data||{}).filter(([,q])=>q>0);
+  if (!entries.length) {
+    body.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:28px;color:var(--muted)">No online sales this week</td></tr>';
+    document.getElementById('online-log').textContent = 'No imports yet this week';
+    return;
+  }
+  body.innerHTML = entries.map(([name,qty])=>{
+    const p = S.products.find(x=>x.name===name);
+    const rev = qty*(p?.sellPrice||0);
+    const imgH = p?.image ? `<img src="${esc(p.image)}" style="width:30px;height:38px;object-fit:cover;border-radius:4px;border:1px solid var(--border)" alt="">` : '<div style="width:30px;height:38px;background:var(--s3);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:13px">🫙</div>';
+    return `<tr><td>${imgH}</td><td style="font-size:13px;font-weight:700;color:var(--cream)">${esc(name)}</td>
+      <td style="text-align:center;font-family:var(--font-d);font-size:18px;font-weight:700;color:var(--blue)">${qty}</td>
+      <td style="text-align:center;font-family:var(--font-d);font-size:16px;font-weight:600;color:var(--green)">${fmtEur(rev)}</td>
+    </tr>`;
+  }).join('');
+  const total = entries.reduce((s,[,q])=>s+q,0);
+  document.getElementById('online-log').innerHTML = `<span style="color:var(--muted)">Last import: accumulated ${total} units across ${entries.length} products this week.</span>`;
+}
+
+async function clearOnline() {
+  if (!confirm(`Clear all online sales for ${S.week}?`)) return;
+  localStorage.removeItem(getOnlineKey());
+  S.onlineSales={}; S.onlineRevenue=0; S.onlineUnits=0;
+  renderOnlineTable({});
+  document.getElementById('ol-units').textContent='0';
+  document.getElementById('ol-rev').textContent='€0';
+  cancelImport();
+  toast('Online sales cleared','ok');
+}
+
+// ── Drop zone ──────────────────────────────────────────────────────────────
+const dz = document.getElementById('drop-zone');
+dz.addEventListener('click', ()=>document.getElementById('file-inp').click());
+dz.addEventListener('dragover', e=>{ e.preventDefault(); dz.classList.add('drag-over'); });
+dz.addEventListener('dragleave', ()=>dz.classList.remove('drag-over'));
+dz.addEventListener('drop', e=>{
+  e.preventDefault(); dz.classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if (f) handleFile(f);
+});
+
+let _parsedRows = [];     // raw parsed CSV rows
+let _fileHeaders = [];    // CSV headers
+
+function handleFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => processCSV(e.target.result);
+  reader.readAsText(file);
+}
+
+function processCSV(text, productCol, qtyCol) {
+  const lines = text.trim().split(/\r?\n/).filter(l=>l.trim());
+  if (lines.length < 2) { toast('File too short or empty','err'); return; }
+  _fileHeaders = parseCSVRow(lines[0]);
+  _parsedRows  = lines.slice(1).map(l => {
+    const cols = parseCSVRow(l);
+    const row = {};
+    _fileHeaders.forEach((h,i)=>{ row[h.trim()] = (cols[i]||'').trim(); });
+    return row;
+  }).filter(r => Object.values(r).some(v=>v));
+
+  // Auto-detect columns if not specified
+  if (!productCol) {
+    productCol = _fileHeaders.find(h=>/lineitem.?name|product|name|title|item|sku/i.test(h));
+  }
+  if (!qtyCol) {
+    qtyCol = _fileHeaders.find(h=>/lineitem.?qty|lineitem.?quan|qty|quant|units|amount|count|sold/i.test(h));
+  }
+
+  // Populate column mapping dropdowns
+  const pm = document.getElementById('map-prod'), qm = document.getElementById('map-qty');
+  pm.innerHTML = _fileHeaders.map(h=>`<option value="${esc(h)}"${h===productCol?' selected':''}>${esc(h)}</option>`).join('');
+  qm.innerHTML = _fileHeaders.map(h=>`<option value="${esc(h)}"${h===qtyCol?' selected':''}>${esc(h)}</option>`).join('');
+  document.getElementById('col-map').style.display = 'block';
+
+  buildPreview(productCol, qtyCol);
+}
+
+function reparse() {
+  const pc = document.getElementById('map-prod').value;
+  const qc = document.getElementById('map-qty').value;
+  buildPreview(pc, qc);
+}
+
+function buildPreview(productCol, qtyCol) {
+  if (!productCol || !qtyCol) return;
+  // Aggregate by product name
+  const agg = {};
+  _parsedRows.forEach(row => {
+    const rawName = row[productCol]||'';
+    const qty     = parseInt(row[qtyCol],10)||0;
+    if (!rawName || qty <= 0) return;
+    const matched = matchProduct(rawName);
+    const key = matched || rawName;
+    agg[key] = (agg[key]||0) + qty;
+  });
+
+  const entries = Object.entries(agg);
+  const matched = entries.filter(([name])=>S.products.some(p=>p.name===name));
+  const unmatched = entries.filter(([name])=>!S.products.some(p=>p.name===name));
+
+  document.getElementById('preview-count').textContent = matched.length;
+  document.getElementById('import-preview').style.display = 'block';
+
+  const tbody = document.getElementById('preview-body');
+  tbody.innerHTML = entries.map(([name,qty])=>{
+    const p = S.products.find(x=>x.name===name);
+    const isMatch = !!p;
+    const rev = isMatch ? fmtEur(qty*(p.sellPrice||0)) : '—';
+    return `<tr>
+      <td style="font-size:13px;color:${isMatch?'var(--cream)':'var(--muted)'};font-weight:${isMatch?700:400}">${esc(name)}</td>
+      <td style="text-align:center;font-weight:700;color:var(--blue)">${qty}</td>
+      <td style="text-align:center;color:var(--green)">${rev}</td>
+      <td style="text-align:center"><span class="badge ${isMatch?'b-ok':'b-err'}">${isMatch?'✓ matched':'✗ no match'}</span></td>
+    </tr>`;
+  }).join('');
+
+  const uw = document.getElementById('unmatched-warn');
+  if (unmatched.length) {
+    uw.style.display='block';
+    uw.textContent = `⚠ ${unmatched.length} row(s) didn't match any product and won't be imported: ${unmatched.map(([n])=>n).join(', ')}`;
+  } else { uw.style.display='none'; }
+
+  // Store for import
+  window._pendingImport = matched.reduce((acc,[name,qty])=>{ acc[name]=(acc[name]||0)+qty; return acc; },{});
+}
+
+function matchProduct(rawName) {
+  const n = rawName.toLowerCase().trim();
+  // Exact
+  let m = S.products.find(p=>p.name.toLowerCase()===n);
+  if (m) return m.name;
+  // Contains full product name
+  m = S.products.find(p=>n.includes(p.name.toLowerCase())||p.name.toLowerCase().includes(n));
+  if (m) return m.name;
+  // Fragrance name (without size)
+  for (const p of S.products) {
+    const frag = p.name.toLowerCase().split(' ').slice(0,-1).join(' ');
+    if (frag && n.includes(frag)) return p.name;
+  }
+  return null;
+}
+
+function parseCSVRow(line) {
+  const result=[]; let field='',inQ=false;
+  for (let i=0;i<line.length;i++) {
+    const c=line[i];
+    if (c==='"') { if(inQ&&line[i+1]==='"'){field+='"';i++;}else inQ=!inQ; }
+    else if (c===','&&!inQ){result.push(field);field='';}
+    else field+=c;
+  }
+  result.push(field);
+  return result;
+}
+
+function importOnline() {
+  const pending = window._pendingImport;
+  if (!pending||!Object.keys(pending).length){toast('Nothing to import','inf');return;}
+  // Accumulate onto existing
+  const existing = loadOnlineCache();
+  Object.entries(pending).forEach(([name,qty])=>{ existing[name]=(existing[name]||0)+qty; });
+  saveOnlineCache(existing);
+  S.onlineSales = existing;
+  const {rev,units} = getOnlineRevenue(existing);
+  S.onlineRevenue=rev; S.onlineUnits=units;
+  renderOnlineTable(existing);
+  document.getElementById('ol-units').textContent=units;
+  document.getElementById('ol-rev').textContent=fmtEur(rev);
+  cancelImport();
+  toast(`✓ ${Object.keys(pending).length} products imported`,'ok');
+  if (S.view==='dash') loadDash();
+}
+
+function cancelImport() {
+  document.getElementById('import-preview').style.display='none';
+  document.getElementById('col-map').style.display='none';
+  window._pendingImport=null; _parsedRows=[]; _fileHeaders=[];
+  document.getElementById('file-inp').value='';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // TOAST
 // ─────────────────────────────────────────────────────────────────────────────
 function toast(msg,type='inf'){
@@ -1244,9 +1589,16 @@ function toast(msg,type='inf'){
 // ─────────────────────────────────────────────────────────────────────────────
 (async()=>{
   if(S.token){
-    const v=await fetch('/api/auth/verify',{headers:{'Authorization':`Bearer ${S.token}`}}).then(r=>r.json()).catch(()=>({valid:false}));
-    if(v.valid){boot();return;}
-    S.token='';localStorage.removeItem('fl_tok');
+    try{
+      const r=await fetch('/api/auth/verify',{method:'POST',headers:{'Authorization':`Bearer ${S.token}`}});
+      const v=await r.json();
+      if(v.valid){boot();return;}
+      // Only clear token on an explicit invalid response (not network errors)
+      S.token='';localStorage.removeItem('fl_tok');
+    } catch {
+      // Network hiccup — stay logged in and boot anyway
+      boot();return;
+    }
   }
   document.getElementById('login-screen').style.display='flex';
 })();

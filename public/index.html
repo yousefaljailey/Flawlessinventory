@@ -728,6 +728,23 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
         <div id="online-log" style="font-size:12px;color:var(--muted)">No imports yet this week</div>
       </div>
     </div>
+
+    <!-- Combined summary: retail + online across all weeks -->
+    <div class="section-lbl" style="margin-top:28px">Cumulative Summary — All Weeks</div>
+    <div class="sub" style="font-size:12px;color:var(--muted);margin-bottom:14px">Retail data from server · Online from imported files · All accumulated totals</div>
+    <div class="card" style="overflow:hidden;padding:0">
+      <table class="data-tbl" id="combined-tbl">
+        <thead><tr>
+          <th>Week</th>
+          <th style="text-align:center;color:var(--blue)">Online Units</th>
+          <th style="text-align:center;color:var(--blue)">Online Rev</th>
+          <th style="text-align:center;color:var(--green)">Retail Units</th>
+          <th style="text-align:center;color:var(--green)">Retail Rev</th>
+          <th style="text-align:center;color:var(--gold)">Total Rev</th>
+        </tr></thead>
+        <tbody id="combined-body"><tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted)">Import a file to see cumulative data</td></tr></tbody>
+      </table>
+    </div>
   </div>
 
 </div><!-- /main -->
@@ -761,6 +778,37 @@ const saveTimers = {};
 // UTILS
 // ─────────────────────────────────────────────────────────────────────────────
 const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+
+// ── Draft: persist unsaved inputs across navigation ───────────────────────
+const DRAFT_PREFIX = 'fl_d_';
+function draftKey(shop){ return `${DRAFT_PREFIX}${S.week}_${encodeURIComponent(shop)}`; }
+function saveDraft(shop){
+  const card=document.getElementById(`acc-${sid(shop)}`); if(!card) return;
+  const d={};
+  card.querySelectorAll('[data-prod]').forEach(row=>{
+    const p=row.dataset.prod; if(!p) return;
+    const iq=Number(row.querySelector('[data-f="initialQty"]')?.value)||0;
+    const sq=Number(row.querySelector('[data-f="soldQty"]')?.value)||0;
+    const tu=Number(row.querySelector('[data-f="topUp"]')?.value)||0;
+    if(!d[p]) d[p]={initialQty:iq,soldQty:sq,topUp:tu};
+  });
+  localStorage.setItem(draftKey(shop),JSON.stringify(d));
+}
+function loadDraft(shop){ try{return JSON.parse(localStorage.getItem(draftKey(shop))||'null');}catch{return null;} }
+function clearDraft(shop){ localStorage.removeItem(draftKey(shop)); }
+function flushSaves(){
+  Object.keys(saveTimers).forEach(shop=>{
+    if(saveTimers[shop]){ clearTimeout(saveTimers[shop]); delete saveTimers[shop]; doAutoSave(shop); }
+  });
+}
+
+// ── Inactivity sign-out: 7 days ───────────────────────────────────────────
+const INACTIVE_MS = 7*24*60*60*1000;
+function trackActivity(){ localStorage.setItem('fl_act',String(Date.now())); }
+function checkInactivity(){
+  const t=parseInt(localStorage.getItem('fl_act')||'0');
+  return !t || (Date.now()-t) <= INACTIVE_MS;
+}
 const fmtDate = iso => { if(!iso) return '—'; const d=new Date(iso); return d.toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}); };
 const fmtEur = n => `€${Number(n).toFixed(0)}`;
 const sid = s => s.replace(/[^a-z0-9]/gi,'_');
@@ -806,6 +854,7 @@ const shopIcon = i => ICONS[i % ICONS.length];
 // API
 // ─────────────────────────────────────────────────────────────────────────────
 async function api(path, opts={}) {
+  trackActivity();
   try {
     const r = await fetch(path, { headers:{'Content-Type':'application/json','Authorization':`Bearer ${S.token}`}, ...opts });
     if (r.status===401) { doLogout(); return {}; }
@@ -845,6 +894,7 @@ function doLogout() {
 // NAVIGATION
 // ─────────────────────────────────────────────────────────────────────────────
 function nav(v) {
+  if(S.view==='stock'&&v!=='stock') flushSaves(); // save any pending changes before leaving
   S.view=v; closeSb();
   document.querySelectorAll('.view').forEach(el=>el.classList.toggle('active',el.id===`v-${v}`));
   document.querySelectorAll('.nav-btn').forEach(el=>el.classList.toggle('active',el.dataset.view===v));
@@ -1017,23 +1067,28 @@ function renderStock() {
 
 function buildAcc(shop,idx) {
   const id=sid(shop), ss=S.stock[shop]||{};
+  const draft=loadDraft(shop); // restore unsaved changes if any
   let anyData=false,anyErr=false;
   const rows=S.products.map(p=>{
-    const raw=ss[p.name],n=norm(raw),rem=calcRem(raw),hd=hasD(raw),err=hd&&rem<0,low=hd&&!err&&rem<=LOW;
+    const raw=ss[p.name];
+    const n=draft?.[p.name]||norm(raw);  // draft values override server data
+    const rem=n.initialQty+n.topUp-n.soldQty, hd=n.initialQty>0||n.soldQty>0||n.topUp>0, err=hd&&rem<0, low=hd&&!err&&rem<=LOW;
     if(hd) anyData=true; if(err) anyErr=true;
     const remCls=!hd?'nil':err?'neg':low?'low':'pos';
     const imgH=p.image?`<img src="${esc(p.image)}" onerror="this.parentNode.innerHTML='<span style=\\'font-size:14px\\'>🫙</span>'" alt="">`:'<span style="font-size:14px">🫙</span>';
     return `<tr class="${err?'row-err':''}" data-shop="${esc(shop)}" data-prod="${esc(p.name)}">
       <td><div class="prod-cell"><div class="no-img">${imgH}</div><div><div class="pname">${esc(p.name.split(' ').slice(0,-1).join(' ')||p.name)}</div><div class="pcat">${esc(p.name.split(' ').pop())} · ${esc(p.category)}</div></div></div></td>
-      <td><input class="num-inp" type="number" data-f="initialQty" value="${n.initialQty||''}" min="0" placeholder="0" inputmode="numeric"></td>
-      <td><input class="num-inp" type="number" data-f="soldQty"    value="${n.soldQty||''}"    min="0" placeholder="0" inputmode="numeric"></td>
-      <td><input class="num-inp" type="number" data-f="topUp"      value="${n.topUp||''}"      min="0" placeholder="0" inputmode="numeric"></td>
+      <td><input class="num-inp" type="number" data-f="initialQty" value="${n.initialQty||0}" min="0" placeholder="0" inputmode="numeric"></td>
+      <td><input class="num-inp" type="number" data-f="soldQty"    value="${n.soldQty||0}"    min="0" placeholder="0" inputmode="numeric"></td>
+      <td><input class="num-inp" type="number" data-f="topUp"      value="${n.topUp||0}"      min="0" placeholder="0" inputmode="numeric"></td>
       <td><span class="rem-val ${remCls}">${hd?rem:'—'}</span></td>
       <td>${!hd?'<span class="st-nil">—</span>':err?'<span class="st-err">✗</span>':'<span class="st-ok">✓</span>'}</td>
     </tr>`;
   }).join('');
   const mobileCards=S.products.map(p=>{
-    const raw=ss[p.name],n=norm(raw),rem=calcRem(raw),hd=hasD(raw),err=hd&&rem<0,low=hd&&!err&&rem<=LOW;
+    const raw=ss[p.name];
+    const n=draft?.[p.name]||norm(raw);
+    const rem=n.initialQty+n.topUp-n.soldQty, hd=n.initialQty>0||n.soldQty>0||n.topUp>0, err=hd&&rem<0, low=hd&&!err&&rem<=LOW;
     const remCls=!hd?'color:var(--dim)':err?'color:var(--red)':low?'color:var(--amber)':'color:var(--green)';
     return `<div class="stk-card${err?' sc-err':''}" data-shop="${esc(shop)}" data-prod="${esc(p.name)}">
       <div class="sc-top">
@@ -1042,9 +1097,9 @@ function buildAcc(shop,idx) {
         <div class="sc-rem"><div class="sc-rem-val" style="${remCls}">${hd?rem:'—'}</div><div class="sc-rem-lbl">remaining</div></div>
       </div>
       <div class="sc-inputs">
-        <div class="sc-field"><label>Initial</label><input class="sc-inp" type="number" data-f="initialQty" value="${n.initialQty||''}" min="0" placeholder="0" inputmode="numeric"></div>
-        <div class="sc-field"><label>Sold</label><input class="sc-inp" type="number" data-f="soldQty" value="${n.soldQty||''}" min="0" placeholder="0" inputmode="numeric"></div>
-        <div class="sc-field"><label>Top-Up</label><input class="sc-inp" type="number" data-f="topUp" value="${n.topUp||''}" min="0" placeholder="0" inputmode="numeric"></div>
+        <div class="sc-field"><label>Initial</label><input class="sc-inp" type="number" data-f="initialQty" value="${n.initialQty||0}" min="0" placeholder="0" inputmode="numeric"></div>
+        <div class="sc-field"><label>Sold</label><input class="sc-inp" type="number" data-f="soldQty" value="${n.soldQty||0}" min="0" placeholder="0" inputmode="numeric"></div>
+        <div class="sc-field"><label>Top-Up</label><input class="sc-inp" type="number" data-f="topUp" value="${n.topUp||0}" min="0" placeholder="0" inputmode="numeric"></div>
       </div>
     </div>`;
   }).join('');
@@ -1071,12 +1126,10 @@ function buildAcc(shop,idx) {
       <div class="stk-cards">${mobileCards}</div>
       <div class="acc-footer">
         <div class="footer-left">
-          <button class="btn btn-danger btn-sm" data-shop="${esc(shop)}" onclick="confirmDel(this.dataset.shop)">Remove</button>
+          <span class="as-ind" style="font-size:11px" id="as-ft-${id}"></span>
+          <button class="btn btn-danger btn-sm" data-shop="${esc(shop)}" onclick="confirmDel(this.dataset.shop)">Remove Shop</button>
         </div>
-        <div style="display:flex;gap:7px;align-items:center">
-          <button class="btn btn-ghost btn-sm" data-shop="${esc(shop)}" onclick="openShopWA(this.dataset.shop)">💬 WhatsApp</button>
-          <button class="btn btn-primary btn-sm" data-shop="${esc(shop)}" onclick="saveShop(this.dataset.shop,false)">Save Now</button>
-        </div>
+        <button class="btn btn-wa btn-sm" data-shop="${esc(shop)}" onclick="openShopWA(this.dataset.shop)">💬 WhatsApp</button>
       </div>
     </div>
   </div>`;
@@ -1094,6 +1147,7 @@ function toggleAcc(shop) {
 function onInp(e) {
   const inp=e.target; if(!inp.classList.contains('num-inp')&&!inp.classList.contains('sc-inp')) return;
   const row=inp.closest('[data-shop]'); if(!row) return;
+  saveDraft(row.dataset.shop); // persist immediately so navigation never loses changes
   // recalc remaining in this row
   const iq=Number(row.querySelector('[data-f="initialQty"]').value)||0;
   const sq=Number(row.querySelector('[data-f="soldQty"]').value)||0;
@@ -1130,8 +1184,9 @@ async function saveShop(shop,silent=false) {
     if(!S.stock[shop]) S.stock[shop]={};
     const savedAt=new Date().toISOString();
     Object.entries(products).forEach(([k,v])=>{S.stock[shop][k]={...v,savedAt};});
+    clearDraft(shop); // data is on server now, no need to keep draft
     if(!silent) {toast(`${shop} saved ✓`,'ok'); renderStock();}
-    if(res.waUrl){ const wb=document.querySelector(`#acc-${id} .btn-ghost[data-shop]`); if(wb) wb.dataset.waurl=res.waUrl; }
+    if(res.waUrl){ const wb=document.querySelector(`#acc-${id} .btn-wa[data-shop]`); if(wb) wb.dataset.waurl=res.waUrl; }
     if(S.view==='dash') loadDash();
     return true;
   } else {
@@ -1391,6 +1446,64 @@ function loadOnlineView() {
   S.onlineSales = data; S.onlineRevenue = rev; S.onlineUnits = units;
   document.getElementById('ol-units').textContent = units;
   document.getElementById('ol-rev').textContent   = fmtEur(rev);
+  renderCombinedSummary();
+}
+
+async function renderCombinedSummary() {
+  const body = document.getElementById('combined-body');
+  // Collect all weeks that have online data from localStorage
+  const onlineWeeks = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k && k.startsWith('fl_online_')) {
+      const wk = k.replace('fl_online_','');
+      const d = JSON.parse(localStorage.getItem(k)||'{}');
+      if (Object.keys(d).length) onlineWeeks.push(wk);
+    }
+  }
+  if (!onlineWeeks.length) {
+    body.innerHTML='<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted)">No online data yet — import a CSV file</td></tr>';
+    return;
+  }
+  onlineWeeks.sort().reverse();
+  body.innerHTML='<tr><td colspan="6" style="text-align:center;padding:16px;color:var(--muted)">Loading retail data…</td></tr>';
+  // Fetch retail data for each week
+  const rows = await Promise.all(onlineWeeks.map(async wk => {
+    const onlineData = JSON.parse(localStorage.getItem(getOnlineKey(wk))||'{}');
+    const {rev:onRev, units:onUnits} = getOnlineRevenue(onlineData);
+    // Fetch retail from server
+    let retailUnits=0, retailRev=0;
+    try {
+      const dash = await api(`/api/dashboard/${wk}`);
+      if (dash && dash.totalSold !== undefined) {
+        retailUnits = dash.totalSold||0;
+        retailRev   = dash.totalRevenue||0;
+      }
+    } catch {}
+    return { wk, onUnits, onRev, retailUnits, retailRev, total: onRev+retailRev };
+  }));
+  // Totals row
+  const totOn=rows.reduce((s,r)=>s+r.onUnits,0);
+  const totOnRev=rows.reduce((s,r)=>s+r.onRev,0);
+  const totRet=rows.reduce((s,r)=>s+r.retailUnits,0);
+  const totRetRev=rows.reduce((s,r)=>s+r.retailRev,0);
+  const totAll=rows.reduce((s,r)=>s+r.total,0);
+  body.innerHTML = rows.map(r=>`<tr>
+    <td style="font-weight:700;color:var(--cream)">${esc(r.wk)}<div style="font-size:10px;color:var(--muted)">${weekRange(r.wk)}</div></td>
+    <td style="text-align:center;color:var(--blue);font-family:var(--font-d);font-size:17px;font-weight:700">${r.onUnits}</td>
+    <td style="text-align:center;color:var(--blue);font-family:var(--font-d);font-size:17px;font-weight:700">${fmtEur(r.onRev)}</td>
+    <td style="text-align:center;color:var(--green);font-family:var(--font-d);font-size:17px;font-weight:700">${r.retailUnits}</td>
+    <td style="text-align:center;color:var(--green);font-family:var(--font-d);font-size:17px;font-weight:700">${fmtEur(r.retailRev)}</td>
+    <td style="text-align:center;color:var(--gold);font-family:var(--font-d);font-size:19px;font-weight:700">${fmtEur(r.total)}</td>
+  </tr>`).join('')
+  +`<tr style="background:var(--s2)">
+    <td style="font-weight:800;color:var(--gold);font-size:12px;letter-spacing:.06em;text-transform:uppercase">TOTAL</td>
+    <td style="text-align:center;font-weight:800;color:var(--blue)">${totOn}</td>
+    <td style="text-align:center;font-weight:800;color:var(--blue)">${fmtEur(totOnRev)}</td>
+    <td style="text-align:center;font-weight:800;color:var(--green)">${totRet}</td>
+    <td style="text-align:center;font-weight:800;color:var(--green)">${fmtEur(totRetRev)}</td>
+    <td style="text-align:center;font-weight:800;color:var(--gold);font-size:16px">${fmtEur(totAll)}</td>
+  </tr>`;
 }
 
 function renderOnlineTable(data) {
@@ -1457,22 +1570,21 @@ function processCSV(text, productCol, qtyCol) {
     return row;
   }).filter(r => Object.values(r).some(v=>v));
 
-  // Auto-detect columns if not specified
-  if (!productCol) {
-    productCol = _fileHeaders.find(h=>/lineitem.?name|product|name|title|item|sku/i.test(h));
-  }
-  if (!qtyCol) {
-    qtyCol = _fileHeaders.find(h=>/lineitem.?qty|lineitem.?quan|qty|quant|units|amount|count|sold/i.test(h));
-  }
+  if (!productCol) productCol = _fileHeaders.find(h=>/lineitem.?name|product|name|title|item|sku/i.test(h));
+  if (!qtyCol)     qtyCol     = _fileHeaders.find(h=>/lineitem.?qty|lineitem.?quan|qty|quant|units|amount|count|sold/i.test(h));
 
-  // Populate column mapping dropdowns
-  const pm = document.getElementById('map-prod'), qm = document.getElementById('map-qty');
-  pm.innerHTML = _fileHeaders.map(h=>`<option value="${esc(h)}"${h===productCol?' selected':''}>${esc(h)}</option>`).join('');
-  qm.innerHTML = _fileHeaders.map(h=>`<option value="${esc(h)}"${h===qtyCol?' selected':''}>${esc(h)}</option>`).join('');
-  document.getElementById('col-map').style.display = 'block';
+  // Detect date column
+  const dateCol = _fileHeaders.find(h=>/created.?at|date|order.?date|paid.?at/i.test(h));
 
+  const pm=document.getElementById('map-prod'), qm=document.getElementById('map-qty');
+  pm.innerHTML=_fileHeaders.map(h=>`<option value="${esc(h)}"${h===productCol?' selected':''}>${esc(h)}</option>`).join('');
+  qm.innerHTML=_fileHeaders.map(h=>`<option value="${esc(h)}"${h===qtyCol?' selected':''}>${esc(h)}</option>`).join('');
+  document.getElementById('col-map').style.display='block';
+
+  _dateCol = dateCol||null;
   buildPreview(productCol, qtyCol);
 }
+let _dateCol = null;
 
 function reparse() {
   const pc = document.getElementById('map-prod').value;
@@ -1482,15 +1594,30 @@ function reparse() {
 
 function buildPreview(productCol, qtyCol) {
   if (!productCol || !qtyCol) return;
-  // Aggregate by product name
-  const agg = {};
+  // Aggregate by week → product (if dates present) or just product
+  const byWeek = {}; // { weekId: { productName: qty } }
+  let hasMultiWeek = false;
   _parsedRows.forEach(row => {
     const rawName = row[productCol]||'';
     const qty     = parseInt(row[qtyCol],10)||0;
     if (!rawName || qty <= 0) return;
     const matched = matchProduct(rawName);
     const key = matched || rawName;
-    agg[key] = (agg[key]||0) + qty;
+    // Determine target week
+    let wk = S.week;
+    if (_dateCol && row[_dateCol]) {
+      const d = new Date(row[_dateCol]);
+      if (!isNaN(d)) wk = getWeekId(d);
+    }
+    if (!byWeek[wk]) byWeek[wk] = {};
+    byWeek[wk][key] = (byWeek[wk][key]||0) + qty;
+  });
+  if (Object.keys(byWeek).length > 1) hasMultiWeek = true;
+
+  // Flatten for preview (all weeks combined)
+  const agg = {};
+  Object.values(byWeek).forEach(weekData => {
+    Object.entries(weekData).forEach(([k,v]) => { agg[k]=(agg[k]||0)+v; });
   });
 
   const entries = Object.entries(agg);
@@ -1519,8 +1646,25 @@ function buildPreview(productCol, qtyCol) {
     uw.textContent = `⚠ ${unmatched.length} row(s) didn't match any product and won't be imported: ${unmatched.map(([n])=>n).join(', ')}`;
   } else { uw.style.display='none'; }
 
-  // Store for import
+  // Store per-week breakdown for import
+  window._pendingByWeek = byWeek;
   window._pendingImport = matched.reduce((acc,[name,qty])=>{ acc[name]=(acc[name]||0)+qty; return acc; },{});
+
+  // Show multi-week notice if applicable
+  if (hasMultiWeek) {
+    const wks = Object.keys(byWeek).sort().reverse();
+    const existing = document.getElementById('unmatched-warn');
+    const mwDiv = document.getElementById('multi-week-notice')||(() => {
+      const d=document.createElement('div'); d.id='multi-week-notice';
+      d.style.cssText='padding:10px 13px;background:var(--blue-bg);border:1px solid rgba(74,143,212,.2);border-radius:var(--r-sm);font-size:12px;color:var(--blue);margin-bottom:10px';
+      existing.parentNode.insertBefore(d,existing);
+      return d;
+    })();
+    mwDiv.textContent=`📅 Dates detected — orders span ${wks.length} weeks: ${wks.join(', ')}. Each week will be imported separately and accumulated.`;
+    mwDiv.style.display='block';
+  } else {
+    const mw=document.getElementById('multi-week-notice'); if(mw) mw.style.display='none';
+  }
 }
 
 function matchProduct(rawName) {
@@ -1552,20 +1696,33 @@ function parseCSVRow(line) {
 }
 
 function importOnline() {
-  const pending = window._pendingImport;
-  if (!pending||!Object.keys(pending).length){toast('Nothing to import','inf');return;}
-  // Accumulate onto existing
-  const existing = loadOnlineCache();
-  Object.entries(pending).forEach(([name,qty])=>{ existing[name]=(existing[name]||0)+qty; });
-  saveOnlineCache(existing);
-  S.onlineSales = existing;
-  const {rev,units} = getOnlineRevenue(existing);
+  const byWeek = window._pendingByWeek || { [S.week]: window._pendingImport||{} };
+  let totalProducts=0, totalUnits=0, weeksImported=0;
+  Object.entries(byWeek).forEach(([wk, weekData]) => {
+    const matched = Object.entries(weekData).filter(([name])=>S.products.some(p=>p.name===name));
+    if (!matched.length) return;
+    // Load existing for that week and accumulate
+    const existing = JSON.parse(localStorage.getItem(getOnlineKey(wk))||'{}');
+    matched.forEach(([name,qty])=>{ existing[name]=(existing[name]||0)+qty; totalUnits+=qty; });
+    localStorage.setItem(getOnlineKey(wk), JSON.stringify(existing));
+    totalProducts = Math.max(totalProducts, matched.length);
+    weeksImported++;
+  });
+  if (!weeksImported) { toast('Nothing matched to import','inf'); return; }
+  // Refresh current week view
+  const currentData = JSON.parse(localStorage.getItem(getOnlineKey())||'{}');
+  S.onlineSales=currentData;
+  const {rev,units}=getOnlineRevenue(currentData);
   S.onlineRevenue=rev; S.onlineUnits=units;
-  renderOnlineTable(existing);
+  renderOnlineTable(currentData);
+  renderCombinedSummary();
   document.getElementById('ol-units').textContent=units;
   document.getElementById('ol-rev').textContent=fmtEur(rev);
   cancelImport();
-  toast(`✓ ${Object.keys(pending).length} products imported`,'ok');
+  const msg = weeksImported>1
+    ? `✓ Imported ${totalUnits} units across ${weeksImported} weeks`
+    : `✓ ${totalProducts} products imported (${totalUnits} units)`;
+  toast(msg,'ok');
   if (S.view==='dash') loadDash();
 }
 
@@ -1589,15 +1746,15 @@ function toast(msg,type='inf'){
 // ─────────────────────────────────────────────────────────────────────────────
 (async()=>{
   if(S.token){
+    // Check inactivity before anything
+    if(!checkInactivity()){ S.token='';localStorage.removeItem('fl_tok'); document.getElementById('login-screen').style.display='flex'; return; }
     try{
       const r=await fetch('/api/auth/verify',{method:'POST',headers:{'Authorization':`Bearer ${S.token}`}});
       const v=await r.json();
-      if(v.valid){boot();return;}
-      // Only clear token on an explicit invalid response (not network errors)
+      if(v.valid){trackActivity();boot();return;}
       S.token='';localStorage.removeItem('fl_tok');
     } catch {
-      // Network hiccup — stay logged in and boot anyway
-      boot();return;
+      boot();return;  // network error — stay logged in
     }
   }
   document.getElementById('login-screen').style.display='flex';

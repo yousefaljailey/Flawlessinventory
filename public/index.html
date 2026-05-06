@@ -328,6 +328,15 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 .log-desc{font-size:12px;color:var(--cream);margin-left:7px}
 .log-sub{font-size:10px;color:var(--muted);margin-top:2px}
 
+/* ─ SECURITY ──────────────────────────────────────────────────────────────── */
+.sec-lbl{font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.sec-val{font-size:14px;font-weight:700;color:var(--cream)}
+.sec-row-current td{background:rgba(78,168,106,.06)!important;border-left:3px solid var(--green)}
+.sec-dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+.sec-dot.live{background:var(--green);box-shadow:0 0 0 3px rgba(78,168,106,.25);animation:pulse 2s infinite}
+.sec-dot.old{background:var(--dim)}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 3px rgba(78,168,106,.25)}50%{box-shadow:0 0 0 6px rgba(78,168,106,.08)}}
+
 /* ─ ONLINE SALES ──────────────────────────────────────────────────────────── */
 .ol-layout{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
 .ol-left,.ol-right{}
@@ -460,6 +469,9 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
     </button>
     <button class="nav-btn" data-view="logs" onclick="nav('logs')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Activity Log
+    </button>
+    <button class="nav-btn" data-view="security" onclick="nav('security')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Security
     </button>
   </nav>
   <div class="sb-footer">
@@ -644,6 +656,52 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
       <div class="view-actions"><button class="btn btn-ghost btn-sm" onclick="loadLogs(true)">Refresh</button></div>
     </div>
     <div class="log-list" id="log-list"></div>
+  </div>
+
+  <!-- SECURITY -->
+  <div class="view" id="v-security">
+    <div class="view-hd">
+      <div><div class="eyebrow">Access Control</div><h1>Security</h1><div class="sub">Every login tracked by device, location and time</div></div>
+      <div class="view-actions">
+        <button class="btn btn-ghost btn-sm" onclick="loadSecurity(true)">Refresh</button>
+        <button class="btn btn-danger btn-sm" onclick="clearAccessLog()">Clear History</button>
+      </div>
+    </div>
+
+    <!-- Current session -->
+    <div class="section-lbl" style="margin-top:0">Current Session</div>
+    <div id="sec-current" class="card" style="padding:20px 22px;margin-bottom:4px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px">
+        <div><div class="sec-lbl">Browser</div><div class="sec-val" id="sec-browser">—</div></div>
+        <div><div class="sec-lbl">Operating System</div><div class="sec-val" id="sec-os">—</div></div>
+        <div><div class="sec-lbl">Device Type</div><div class="sec-val" id="sec-device">—</div></div>
+        <div><div class="sec-lbl">Screen</div><div class="sec-val" id="sec-screen">—</div></div>
+        <div><div class="sec-lbl">Timezone</div><div class="sec-val" id="sec-tz">—</div></div>
+        <div><div class="sec-lbl">Language</div><div class="sec-val" id="sec-lang">—</div></div>
+        <div><div class="sec-lbl">Login Time</div><div class="sec-val" id="sec-time">—</div></div>
+      </div>
+    </div>
+
+    <!-- Access history table -->
+    <div class="section-lbl">Access History <span style="font-family:var(--font);font-weight:500;color:var(--muted);font-size:11px;letter-spacing:0;text-transform:none;margin-left:6px">most recent first</span></div>
+    <div class="card" style="overflow:hidden;padding:0">
+      <table class="data-tbl">
+        <thead><tr>
+          <th style="width:28px"></th>
+          <th>Date &amp; Time</th>
+          <th>Device</th>
+          <th>Browser</th>
+          <th>OS</th>
+          <th>Location</th>
+          <th>IP Address</th>
+          <th>Timezone</th>
+          <th>Screen</th>
+        </tr></thead>
+        <tbody id="sec-body">
+          <tr><td colspan="9" style="text-align:center;padding:28px;color:var(--muted)">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 
   <!-- ONLINE SALES -->
@@ -877,7 +935,10 @@ async function doLogin() {
   err.style.display='none';
   if(!u||!p){err.textContent='Enter username and password';err.style.display='block';return;}
   btn.disabled=true; btn.textContent='Signing in…';
-  const r=await fetch('/api/auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,password:p})});
+  const tz=Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const scr=`${screen.width}×${screen.height}`;
+  const lng=navigator.language;
+  const r=await fetch('/api/auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,password:p,timezone:tz,screen:scr,lang:lng})});
   const d=await r.json();
   if(d.token){ S.token=d.token; localStorage.setItem('fl_tok',S.token); boot(); }
   else{ err.textContent=d.error||'Login failed'; err.style.display='block'; }
@@ -899,13 +960,14 @@ function nav(v) {
   document.querySelectorAll('.view').forEach(el=>el.classList.toggle('active',el.id===`v-${v}`));
   document.querySelectorAll('.nav-btn').forEach(el=>el.classList.toggle('active',el.dataset.view===v));
   document.querySelectorAll('.bn-btn').forEach(el=>el.classList.toggle('active',el.dataset.view===v));
-  if(v==='dash')    loadDash();
-  if(v==='stock')   renderStock();
-  if(v==='shops')   renderShops();
-  if(v==='workflow'){loadManual();renderWF();}
-  if(v==='reports') renderReports();
-  if(v==='logs')    loadLogs();
-  if(v==='online')  loadOnlineView();
+  if(v==='dash')     loadDash();
+  if(v==='stock')    renderStock();
+  if(v==='shops')    renderShops();
+  if(v==='workflow') {loadManual();renderWF();}
+  if(v==='reports')  renderReports();
+  if(v==='logs')     loadLogs();
+  if(v==='online')   loadOnlineView();
+  if(v==='security') loadSecurity();
 }
 function openSb()  { document.getElementById('sidebar').classList.add('open'); document.getElementById('sb-overlay').classList.add('show'); }
 function closeSb() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sb-overlay').classList.remove('show'); }
@@ -993,7 +1055,7 @@ async function loadDash() {
   if(!d.shopStatuses?.length){ g.innerHTML='<div class="empty" style="padding:20px"><p>No shops</p></div>'; }
   else g.innerHTML=d.shopStatuses.map(s=>{
     const cls=!s.hasData?'empty':s.ok?'ok':d.overSold?.some(o=>o.shop===s.shop)?'err':'warn';
-    const badge=!s.hasData?'<span class="badge b-empty">Not entered</span>':!s.ok?'<span class="badge b-warn">⚠ Alert</span>':'<span class="badge b-ok">✓ Good</span>';
+    const badge=!s.hasData?'<span class="badge b-blue">Pending</span>':!s.ok?'<span class="badge b-warn">⚠ Alert</span>':'<span class="badge b-ok">✓ Good</span>';
     return `<div class="ssc ${cls}" data-shop="${esc(s.shop)}" onclick="navToShop(this.dataset.shop)" title="Click to open stock entry">
       <div class="ssc-name">${esc(s.shop)}</div>
       <div class="ssc-row"><div class="ssc-stat">Sold <strong>${s.sold}</strong> · Left <strong>${s.remaining}</strong></div>${badge}</div>
@@ -1078,9 +1140,9 @@ function buildAcc(shop,idx) {
     const imgH=p.image?`<img src="${esc(p.image)}" onerror="this.parentNode.innerHTML='<span style=\\'font-size:14px\\'>🫙</span>'" alt="">`:'<span style="font-size:14px">🫙</span>';
     return `<tr class="${err?'row-err':''}" data-shop="${esc(shop)}" data-prod="${esc(p.name)}">
       <td><div class="prod-cell"><div class="no-img">${imgH}</div><div><div class="pname">${esc(p.name.split(' ').slice(0,-1).join(' ')||p.name)}</div><div class="pcat">${esc(p.name.split(' ').pop())} · ${esc(p.category)}</div></div></div></td>
-      <td><input class="num-inp" type="number" data-f="initialQty" value="${n.initialQty||0}" min="0" placeholder="0" inputmode="numeric"></td>
-      <td><input class="num-inp" type="number" data-f="soldQty"    value="${n.soldQty||0}"    min="0" placeholder="0" inputmode="numeric"></td>
-      <td><input class="num-inp" type="number" data-f="topUp"      value="${n.topUp||0}"      min="0" placeholder="0" inputmode="numeric"></td>
+      <td><input class="num-inp" type="number" data-f="initialQty" value="${n.initialQty||0}" min="0" placeholder="0" inputmode="numeric" onfocus="this.select()"></td>
+      <td><input class="num-inp" type="number" data-f="soldQty"    value="${n.soldQty||0}"    min="0" placeholder="0" inputmode="numeric" onfocus="this.select()"></td>
+      <td><input class="num-inp" type="number" data-f="topUp"      value="${n.topUp||0}"      min="0" placeholder="0" inputmode="numeric" onfocus="this.select()"></td>
       <td><span class="rem-val ${remCls}">${hd?rem:'—'}</span></td>
       <td>${!hd?'<span class="st-nil">—</span>':err?'<span class="st-err">✗</span>':'<span class="st-ok">✓</span>'}</td>
     </tr>`;
@@ -1097,14 +1159,14 @@ function buildAcc(shop,idx) {
         <div class="sc-rem"><div class="sc-rem-val" style="${remCls}">${hd?rem:'—'}</div><div class="sc-rem-lbl">remaining</div></div>
       </div>
       <div class="sc-inputs">
-        <div class="sc-field"><label>Initial</label><input class="sc-inp" type="number" data-f="initialQty" value="${n.initialQty||0}" min="0" placeholder="0" inputmode="numeric"></div>
-        <div class="sc-field"><label>Sold</label><input class="sc-inp" type="number" data-f="soldQty" value="${n.soldQty||0}" min="0" placeholder="0" inputmode="numeric"></div>
-        <div class="sc-field"><label>Top-Up</label><input class="sc-inp" type="number" data-f="topUp" value="${n.topUp||0}" min="0" placeholder="0" inputmode="numeric"></div>
+        <div class="sc-field"><label>Initial</label><input class="sc-inp" type="number" data-f="initialQty" value="${n.initialQty||0}" min="0" placeholder="0" inputmode="numeric" onfocus="this.select()"></div>
+        <div class="sc-field"><label>Sold</label><input class="sc-inp" type="number" data-f="soldQty" value="${n.soldQty||0}" min="0" placeholder="0" inputmode="numeric" onfocus="this.select()"></div>
+        <div class="sc-field"><label>Top-Up</label><input class="sc-inp" type="number" data-f="topUp" value="${n.topUp||0}" min="0" placeholder="0" inputmode="numeric" onfocus="this.select()"></div>
       </div>
     </div>`;
   }).join('');
-  const badgeCls=!anyData?'b-empty':anyErr?'b-err':'b-ok';
-  const badgeTxt=!anyData?'Not entered':anyErr?'⚠ Issue':'✓ Good';
+  const badgeCls=!anyData?'b-blue':anyErr?'b-err':'b-ok';
+  const badgeTxt=!anyData?'Pending':anyErr?'⚠ Issue':'✓ Good';
   const lastSave=S.stock[shop]?Object.values(S.stock[shop]).map(v=>v?.savedAt).filter(Boolean).sort().pop():null;
   return `<div class="acc-card${anyErr?' has-err':''}" id="acc-${id}">
     <div class="acc-hd" data-shop="${esc(shop)}" onclick="toggleAcc(this.dataset.shop)">
@@ -1731,6 +1793,84 @@ function cancelImport() {
   document.getElementById('col-map').style.display='none';
   window._pendingImport=null; _parsedRows=[]; _fileHeaders=[];
   document.getElementById('file-inp').value='';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SECURITY
+// ─────────────────────────────────────────────────────────────────────────────
+function detectClientDevice() {
+  const ua=navigator.userAgent;
+  let browser='Unknown',os='Unknown',device='Desktop';
+  if(/Edg\/(\d+)/.test(ua))                   browser=`Edge ${RegExp.$1}`;
+  else if(/Chrome\/(\d+)/.test(ua))           browser=`Chrome ${RegExp.$1}`;
+  else if(/Firefox\/(\d+)/.test(ua))          browser=`Firefox ${RegExp.$1}`;
+  else if(/Version\/(\d+).*Safari/.test(ua))  browser=`Safari ${RegExp.$1}`;
+  if(/iPhone/.test(ua))     {os='iPhone';   device='📱 Mobile';}
+  else if(/iPad/.test(ua))  {os='iPad';     device='📟 Tablet';}
+  else if(/Android/.test(ua)){os='Android'; device='📱 Mobile';}
+  else if(/Win/.test(ua))   {os='Windows';  device='💻 Desktop';}
+  else if(/Mac/.test(ua))   {os='macOS';    device='💻 Desktop';}
+  else if(/Linux/.test(ua)) {os='Linux';    device='🖥️ Desktop';}
+  return {browser,os,device};
+}
+
+function populateCurrentSession() {
+  const {browser,os,device} = detectClientDevice();
+  document.getElementById('sec-browser').textContent = browser;
+  document.getElementById('sec-os').textContent      = os;
+  document.getElementById('sec-device').textContent  = device;
+  document.getElementById('sec-screen').textContent  = `${screen.width}×${screen.height}`;
+  document.getElementById('sec-tz').textContent      = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  document.getElementById('sec-lang').textContent    = navigator.language;
+  document.getElementById('sec-time').textContent    = new Date().toLocaleString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+
+let _secLogs = [];
+async function loadSecurity(force=false) {
+  populateCurrentSession();
+  if (_secLogs.length && !force) { renderSecurityTable(); return; }
+  const logs = await api('/api/access-log');
+  _secLogs = Array.isArray(logs) ? logs : [];
+  renderSecurityTable();
+}
+
+function renderSecurityTable() {
+  const body = document.getElementById('sec-body');
+  if (!_secLogs.length) {
+    body.innerHTML='<tr><td colspan="9" style="text-align:center;padding:28px;color:var(--muted)">No login history yet</td></tr>';
+    return;
+  }
+  const curTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const curSc = `${screen.width}×${screen.height}`;
+  body.innerHTML = _secLogs.map((log,i) => {
+    const ts   = new Date(log.timestamp);
+    const date = ts.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+    const time = ts.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    const isCurrent = i===0 && log.timezone===curTz && log.screen===curSc;
+    const dot  = `<span class="sec-dot ${isCurrent?'live':'old'}" title="${isCurrent?'Current session':'Past session'}"></span>`;
+    const devIcon = /Mobile/i.test(log.device)?'📱':/Tablet/i.test(log.device)?'📟':'💻';
+    const ip   = log.ip&&log.ip!=='unknown' ? log.ip.replace(/(\d+\.\d+)\.\d+\.\d+/,'$1.xxx.xxx') : '—';
+    const loc  = log.location || '⏳ locating…';
+    return `<tr class="${isCurrent?'sec-row-current':''}">
+      <td style="text-align:center">${dot}</td>
+      <td><strong style="color:var(--cream);font-size:13px">${date}</strong><div style="font-size:11px;color:var(--muted)">${time}</div></td>
+      <td style="font-size:18px;text-align:center" title="${esc(log.device||'')}">${devIcon}</td>
+      <td style="font-weight:700;color:var(--cream)">${esc(log.browser||'—')}</td>
+      <td style="color:var(--cream-d)">${esc(log.os||'—')}</td>
+      <td style="color:var(--gold-d);font-weight:600">${esc(loc)}</td>
+      <td style="font-family:monospace;font-size:11px;color:var(--muted)">${esc(ip)}</td>
+      <td style="font-size:11px;color:var(--muted)">${esc(log.timezone||'—')}</td>
+      <td style="font-size:11px;color:var(--muted)">${esc(log.screen||'—')}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function clearAccessLog() {
+  if (!confirm('Clear all login history? This cannot be undone.')) return;
+  const r = await fetch('/api/access-log',{method:'DELETE',headers:{'Authorization':`Bearer ${S.token}`}});
+  const d = await r.json();
+  if (d.success) { _secLogs=[]; renderSecurityTable(); toast('Access log cleared','ok'); }
+  else toast('Failed to clear','err');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

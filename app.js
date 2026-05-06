@@ -37,6 +37,50 @@ const LOW_STOCK_THRESHOLD = 3;
 const WA_NUMBER           = '33758033774';
 const REPORT_EMAIL        = 'flawlessperfumesmanagement@gmail.com';
 
+// ── Device helpers ────────────────────────────────────────────────────────────
+function parseUA(ua='') {
+  let browser='Unknown', os='Unknown', device='Desktop';
+  if (/Edg\/(\d+)/.test(ua))                  browser=`Edge ${RegExp.$1}`;
+  else if (/Chrome\/(\d+)/.test(ua))          browser=`Chrome ${RegExp.$1}`;
+  else if (/Firefox\/(\d+)/.test(ua))         browser=`Firefox ${RegExp.$1}`;
+  else if (/Version\/(\d+).*Safari/.test(ua)) browser=`Safari ${RegExp.$1}`;
+  else if (/Safari/.test(ua))                 browser='Safari';
+  if      (/iPhone/.test(ua))   { os='iPhone';          device='Mobile';  }
+  else if (/iPad/.test(ua))     { os='iPad';             device='Tablet';  }
+  else if (/Android/.test(ua))  { const v=/Android ([0-9.]+)/.exec(ua); os=`Android${v?` ${v[1]}`:''}`;  device='Mobile'; }
+  else if (/Windows NT 1[01]/.test(ua)) os='Windows 10/11';
+  else if (/Windows/.test(ua))  os='Windows';
+  else if (/Mac OS X/.test(ua)) os='macOS';
+  else if (/Linux/.test(ua))    os='Linux';
+  return { browser, os, device };
+}
+
+async function geolocate(ip) {
+  if (!ip || ip.startsWith('127.') || ip==='::1' || ip==='unknown') return 'Local';
+  try {
+    const ctrl  = new AbortController();
+    const timer = setTimeout(()=>ctrl.abort(), 2000);
+    const r     = await fetch(`http://ip-api.com/json/${ip}?fields=city,country,status`, { signal:ctrl.signal });
+    clearTimeout(timer);
+    const d = await r.json();
+    if (d.status==='success') return [d.city, d.country].filter(Boolean).join(', ');
+  } catch { /* timeout or network error */ }
+  return null;
+}
+
+async function logAccess(entry) {
+  const logs = await storage.get('access_log');
+  logs.unshift(entry);
+  await storage.set('access_log', logs.slice(0, 500));
+  // Enrich with geo in background — non-blocking
+  geolocate(entry.ip).then(async loc => {
+    if (!loc) return;
+    const l = await storage.get('access_log');
+    const i = l.findIndex(e => e.timestamp === entry.timestamp && e.ip === entry.ip);
+    if (i >= 0) { l[i].location = loc; await storage.set('access_log', l); }
+  }).catch(() => {});
+}
+
 // ── Auth ──────────────────────────────────────────────────────────────────────
 const AUTH_SECRET = process.env.AUTH_SECRET || 'fl4wl3ss-inv-2026-secret';
 const USERS       = { flawless: 'Flawless123' };
@@ -100,6 +144,16 @@ app.post('/api/auth', (req, res) => {
   if (!username || !password) return res.status(400).json({ error: 'Missing credentials' });
   if (USERS[username.toLowerCase()] !== password) { recordFailure(ip); return res.status(401).json({ error: 'Invalid username or password' }); }
   clearAttempts(ip);
+  const { browser, os, device } = parseUA(req.headers['user-agent'] || '');
+  const { timezone='', screen='', lang='' } = req.body || {};
+  const entry = {
+    timestamp: new Date().toISOString(),
+    user: username.toLowerCase(),
+    ip, browser, os, device,
+    timezone, screen, lang,
+    location: null,
+  };
+  logAccess(entry).catch(() => {}); // fire-and-forget
   res.json({ success: true, token: makeToken(username.toLowerCase()) });
 });
 
@@ -168,6 +222,17 @@ async function addLog(entry) {
   logs.unshift({ ...entry, timestamp: new Date().toISOString() });
   await storage.set('logs', logs.slice(0, 2000));
 }
+
+// ── API: Access Log ───────────────────────────────────────────────────────────
+app.get('/api/access-log', requireAuth, async (_, res) => {
+  try { res.json(await storage.get('access_log') || []); }
+  catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/access-log', requireAuth, async (_, res) => {
+  try { await storage.set('access_log', []); res.json({ success: true }); }
+  catch (e) { res.status(500).json({ error: e.message }); }
+});
 
 // ── API: Shops ────────────────────────────────────────────────────────────────
 app.get('/api/shops', requireAuth, async (_, res) => {

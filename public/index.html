@@ -453,6 +453,9 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
     <button class="nav-btn" data-view="stock" onclick="nav('stock')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><line x1="2" y1="11" x2="22" y2="11"/></svg>Weekly Stock
     </button>
+    <button class="nav-btn" data-view="warehouse" onclick="nav('warehouse')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16v12H4z"/><path d="M8 10h8"/><path d="M8 14h8"/></svg>Warehouse
+    </button>
     <button class="nav-btn" data-view="shops" onclick="nav('shops')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Shops
     </button>
@@ -576,6 +579,24 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
       </div>
     </div>
     <div class="acc-list" id="acc-list"><div class="empty"><div class="ei">🏪</div><p>Loading…</p></div></div>
+  </div>
+
+  <!-- WAREHOUSE -->
+  <div class="view" id="v-warehouse">
+    <div class="view-hd">
+      <div><div class="eyebrow">Manufacturing</div><h1>Stock Warehouse</h1><div class="sub">Track boxes, bottles and production supplies</div></div>
+    </div>
+    <div class="section-lbl">Warehouse Inventory</div>
+    <div class="card" style="overflow:auto;padding:0">
+      <table class="data-tbl" id="warehouse-table">
+        <thead><tr><th>Item</th><th style="text-align:center">Quantity</th><th style="text-align:center">Last updated</th></tr></thead>
+        <tbody id="warehouse-body"><tr><td colspan="3" style="text-align:center;padding:20px;color:var(--muted)">Loading…</td></tr></tbody>
+      </table>
+    </div>
+    <div class="view-actions" style="margin-top:18px;gap:10px;display:flex;flex-wrap:wrap">
+      <button class="btn btn-primary" onclick="saveWarehouse()">Save Warehouse</button>
+      <button class="btn btn-ghost btn-sm" onclick="resetWarehouse()">Reset Warehouse</button>
+    </div>
   </div>
 
   <!-- SHOPS -->
@@ -839,10 +860,46 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 const S = {
   token:    localStorage.getItem('fl_tok') || '',
   products: [], shops: [], contacts: {}, stock: {}, logs: [], dash: null,
-  week: '', view: 'dash', expanded: new Set(), manual: {},
+  warehouse: {}, week: '', view: 'dash', expanded: new Set(), manual: {},
 };
 const WA = '33758033774';
 const LOW = 3;
+const WAREHOUSE_ITEMS = [
+  "Monte-Carlo 100ml box (empty)",
+  "Bedouin 100ml box (empty)",
+  "Rub Al Khali 100ml box (empty)",
+  "Summer in Paris 100ml box (empty)",
+  "Monte-Carlo 30ml box (empty)",
+  "Bedouin 30ml box (empty)",
+  "Rub Al Khali 30ml box (empty)",
+  "Summer in Paris 30ml box (empty)",
+  "Discovery Set box (empty)",
+  "Discovery set bottles printed",
+  "100ml bottles (empty)",
+  "Summer in Paris 30ml bottle (empty)",
+  "Bedouin 30ml bottle (empty)",
+  "Monte-Carlo 30ml bottle (empty)",
+  "Rub Al Khali (pliesky 100ml)",
+  "Monte-Carlo (pliesky 100ml)",
+  "Bedouin (pliesky 100ml)",
+  "Summer in Paris (pliesky 100ml)",
+  "Pumpicky",
+  "Aqua",
+  "Fixater",
+  "Alcohol",
+  "Catalogues the (big one)",
+  "Lawless paper bag medium",
+  "Flawless paper bag mini",
+  "Thank You for your purchase CARD",
+  "Thank You empty CARD",
+  "tester bottles",
+  "Bedouin tester package mini",
+  "Rub Al Khali tester package mini",
+  "Monte-Carlo tester package mini",
+  "Summer in Paris tester package mini",
+  "Flawless satin pouches",
+  "Chocolate shipping box",
+];
 const saveTimers = {};
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -969,12 +1026,14 @@ function doLogout() {
 // ─────────────────────────────────────────────────────────────────────────────
 function nav(v) {
   if(S.view==='stock'&&v!=='stock') flushSaves(); // save any pending changes before leaving
+  if(S.view==='warehouse'&&v!=='warehouse') flushWarehouseSaves();
   S.view=v; closeSb();
   document.querySelectorAll('.view').forEach(el=>el.classList.toggle('active',el.id===`v-${v}`));
   document.querySelectorAll('.nav-btn').forEach(el=>el.classList.toggle('active',el.dataset.view===v));
   document.querySelectorAll('.bn-btn').forEach(el=>el.classList.toggle('active',el.dataset.view===v));
   if(v==='dash')     loadDash();
   if(v==='stock')    renderStock();
+  if(v==='warehouse') renderWarehouse();
   if(v==='shops')    renderShops();
   if(v==='workflow') {loadManual();renderWF();}
   if(v==='reports')  renderReports();
@@ -1013,11 +1072,12 @@ async function boot() {
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app').style.display='block';
   const wkD=await api('/api/week'); setWeek(wkD.week||getWeekId());
-  const [prods,shops,contacts,stock]=await Promise.all([api('/api/products'),api('/api/shops'),api('/api/contacts'),api(`/api/stock/${S.week}`)]);
+  const [prods,shops,contacts,stock,warehouse]=await Promise.all([api('/api/products'),api('/api/shops'),api('/api/contacts'),api(`/api/stock/${S.week}`),api('/api/warehouse')]);
   S.products=Array.isArray(prods)?prods:[];
   S.shops=Array.isArray(shops)?shops:[];
   S.contacts=contacts||{};
   S.stock=stock||{};
+  S.warehouse=warehouse||{};
   // Load online sales from localStorage
   const olData = loadOnlineCache();
   const {rev:olRev,units:olUnits} = getOnlineRevenue(olData);
@@ -1076,14 +1136,15 @@ async function loadDash() {
     </div>`;
   }).join('');
   // Product table
-  const entries=Object.entries(d.productSummary||{});
+  const allProducts = S.products || [];
+  const summary = d.productSummary || {};
   const pb=document.getElementById('prod-perf-body');
-  if(!entries.length){ pb.innerHTML='<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--muted)">No data this week</td></tr>'; }
-  else pb.innerHTML=entries.map(([name,pd])=>{
-    const p=S.products.find(x=>x.name===name);
-    const imgH=p?.image?`<img src="${esc(p.image)}" class="prod-img-sm" alt="" onerror="this.style.display='none'">`:'<div class="prod-img-fallback">🫙</div>';
+  if(!allProducts.length){ pb.innerHTML='<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--muted)">No products configured</td></tr>'; }
+  else pb.innerHTML=allProducts.map(p=>{
+    const pd = summary[p.name] || { delivered: 0, sold: 0, remaining: 0, revenue: 0 };
+    const imgH=p.image?`<img src="${esc(p.image)}" class="prod-img-sm" alt="" onerror="this.style.display='none'">`:'<div class="prod-img-fallback">🫙</div>';
     const remCls=pd.remaining<0?'color:var(--red)':pd.remaining<=LOW?'color:var(--amber)':'color:var(--green)';
-    return `<tr><td>${imgH}</td><td style="font-size:13px;color:var(--cream)">${esc(name)}</td>
+    return `<tr><td>${imgH}</td><td style="font-size:13px;color:var(--cream)">${esc(p.name)}</td>
       <td style="text-align:center"><span class="num-big">${pd.sold}</span></td>
       <td style="text-align:center"><span class="num-big" style="color:var(--green)">${fmtEur(pd.revenue)}</span></td>
       <td style="text-align:center"><span class="num-big" style="${remCls}">${pd.remaining}</span></td></tr>`;
@@ -1138,6 +1199,71 @@ function renderStock() {
     if(body){body.style.display='block';if(card) card.classList.add('is-open');}
   });
   al.addEventListener('input',onInp);
+}
+
+let warehouseSaveTimers = {};
+function flushWarehouseSaves(){ Object.keys(warehouseSaveTimers).forEach(item=>{ if(warehouseSaveTimers[item]){ clearTimeout(warehouseSaveTimers[item]); warehouseSaveTimers[item]=null; saveWarehouseItem(item); }}); }
+
+function renderWarehouse() {
+  const body = document.getElementById('warehouse-body');
+  if (!body) return;
+  body.innerHTML = WAREHOUSE_ITEMS.map(item => {
+    const entry = S.warehouse[item] || { quantity: 0, savedAt: null };
+    return `<tr data-item="${esc(item)}"><td>${esc(item)}</td>
+      <td style="text-align:center"><input class="num-inp" type="number" min="0" value="${entry.quantity||0}" data-item="${esc(item)}" oninput="onWarehouseInput(this)"></td>
+      <td style="text-align:center;color:var(--muted);font-size:13px">${entry.savedAt?fmtDate(entry.savedAt):'never'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function onWarehouseInput(input) {
+  const item = input.dataset.item;
+  if (!item) return;
+  const qty = Math.max(0, Number(input.value) || 0);
+  S.warehouse[item] = { ...(S.warehouse[item] || {}), quantity: qty, savedAt: S.warehouse[item]?.savedAt || null };
+  clearTimeout(warehouseSaveTimers[item]);
+  warehouseSaveTimers[item] = setTimeout(() => saveWarehouseItem(item), 1000);
+}
+
+async function saveWarehouseItem(item) {
+  const entry = S.warehouse[item] || { quantity: 0 };
+  const res = await apiPost('/api/warehouse', { items: { [item]: { quantity: entry.quantity } } });
+  if (res.success) {
+    const now = new Date().toISOString();
+    S.warehouse[item] = { ...S.warehouse[item], quantity: entry.quantity, savedAt: now };
+    renderWarehouse();
+    toast(`${item} saved ✓`, 'ok');
+    return true;
+  }
+  toast(res.error || 'Warehouse save failed', 'err');
+  return false;
+}
+
+async function saveWarehouse() {
+  const items = {};
+  WAREHOUSE_ITEMS.forEach(item => {
+    const row = document.querySelector(`tr[data-item="${item}"] input[data-item]`);
+    const qty = row ? Math.max(0, Number(row.value) || 0) : (S.warehouse[item]?.quantity || 0);
+    items[item] = { quantity: qty };
+  });
+  const res = await apiPost('/api/warehouse', { items });
+  if (res.success) {
+    const now = new Date().toISOString();
+    Object.entries(items).forEach(([item, vals]) => {
+      S.warehouse[item] = { quantity: vals.quantity, savedAt: now };
+    });
+    renderWarehouse();
+    toast('Warehouse saved ✓', 'ok');
+    return;
+  }
+  toast(res.error || 'Warehouse save failed', 'err');
+}
+
+function resetWarehouse() {
+  if (!confirm('Reset warehouse quantities to zero?')) return;
+  WAREHOUSE_ITEMS.forEach(item => { S.warehouse[item] = { quantity: 0, savedAt: null }; });
+  renderWarehouse();
+  saveWarehouse();
 }
 
 function buildAcc(shop,idx) {

@@ -27,10 +27,51 @@ const PRODUCT_NAMES = PRODUCTS.map(p => p.name);
 const DEFAULT_SHOPS = [
   "Ardi's Barbershop",
   "Family's Barber",
+  "Hair Essence",
+  "Elevated Studio",
+];
+
+const REMOVED_SHOPS = [
   "Mall of the Emirates",
   "Dubai Mall",
   "City Centre Mirdif",
-  "Elevated Studio",
+];
+
+const WAREHOUSE_ITEMS = [
+  "Monte-Carlo 100ml box (empty)",
+  "Bedouin 100ml box (empty)",
+  "Rub Al Khali 100ml box (empty)",
+  "Summer in Paris 100ml box (empty)",
+  "Monte-Carlo 30ml box (empty)",
+  "Bedouin 30ml box (empty)",
+  "Rub Al Khali 30ml box (empty)",
+  "Summer in Paris 30ml box (empty)",
+  "Discovery Set box (empty)",
+  "Discovery set bottles printed",
+  "100ml bottles (empty)",
+  "Summer in Paris 30ml bottle (empty)",
+  "Bedouin 30ml bottle (empty)",
+  "Monte-Carlo 30ml bottle (empty)",
+  "Rub Al Khali (pliesky 100ml)",
+  "Monte-Carlo (pliesky 100ml)",
+  "Bedouin (pliesky 100ml)",
+  "Summer in Paris (pliesky 100ml)",
+  "Pumpicky",
+  "Aqua",
+  "Fixater",
+  "Alcohol",
+  "Catalogues the (big one)",
+  "Lawless paper bag medium",
+  "Flawless paper bag mini",
+  "Thank You for your purchase CARD",
+  "Thank You empty CARD",
+  "tester bottles",
+  "Bedouin tester package mini",
+  "Rub Al Khali tester package mini",
+  "Monte-Carlo tester package mini",
+  "Summer in Paris tester package mini",
+  "Flawless satin pouches",
+  "Chocolate shipping box",
 ];
 
 const LOW_STOCK_THRESHOLD = 3;
@@ -235,12 +276,18 @@ app.delete('/api/access-log', requireAuth, async (_, res) => {
 });
 
 // ── API: Shops ────────────────────────────────────────────────────────────────
+function filterShops(shops) {
+  return (shops || []).filter(s => s && !REMOVED_SHOPS.includes(s));
+}
+
 app.get('/api/shops', requireAuth, async (_, res) => {
   try {
-    let shops = await storage.get('shops');
+    let shops = await storage.get('shops') || [];
+    const originalShops = [...shops];
+    shops = filterShops(shops);
+    const init = await storage.get('shops_initialized');
     if (!shops || shops.length === 0) {
-      const init = await storage.get('shops_initialized');
-      if (!init) {
+      if (!init || originalShops.some(s => REMOVED_SHOPS.includes(s))) {
         shops = [...DEFAULT_SHOPS];
         await storage.set('shops', shops);
         await storage.set('shops_initialized', true);
@@ -271,6 +318,43 @@ app.delete('/api/shops/:name', requireAuth, async (req, res) => {
     await storage.set('shops', shops.filter(s => s !== name));
     await addLog({ action: 'REMOVE_SHOP', shop: name });
     res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+function normalizeWarehouse(warehouse = {}) {
+  const normalized = { ...warehouse };
+  for (const item of WAREHOUSE_ITEMS) {
+    if (!Object.prototype.hasOwnProperty.call(normalized, item)) {
+      normalized[item] = { quantity: 0, savedAt: null };
+    }
+  }
+  return normalized;
+}
+
+app.get('/api/warehouse', requireAuth, async (_, res) => {
+  try {
+    let warehouse = await storage.get('warehouse');
+    warehouse = normalizeWarehouse(warehouse);
+    await storage.set('warehouse', warehouse);
+    res.json(warehouse);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/warehouse', requireAuth, async (req, res) => {
+  try {
+    const { items } = req.body || {};
+    if (!items || typeof items !== 'object') return res.status(400).json({ error: 'Items object required' });
+    const warehouse = await storage.get('warehouse') || {};
+    const savedAt = new Date().toISOString();
+    for (const [name, vals] of Object.entries(items)) {
+      warehouse[name] = {
+        quantity: Math.max(0, Number(vals.quantity) || 0),
+        savedAt,
+      };
+    }
+    await storage.set('warehouse', warehouse);
+    await addLog({ action: 'WAREHOUSE_SAVE', items: Object.keys(items).length });
+    res.json({ success: true, warehouse });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -330,12 +414,13 @@ app.get('/api/dashboard/:week', requireAuth, async (req, res) => {
   try {
     const { week } = req.params;
     const [stock, shops] = await Promise.all([storage.get('stock'), storage.get('shops')]);
+    const filteredShops = filterShops(shops);
     const weekData = stock[week] || {};
 
     let totalDelivered=0, totalSold=0, totalRemaining=0, totalRevenue=0, totalCOGS=0;
     const lowStock=[], overSold=[], productSummary={}, shopStatuses=[];
 
-    for (const shop of shops) {
+    for (const shop of filteredShops) {
       const shopData = weekData[shop] || {};
       let hasAny=false, shopSold=0, shopRemain=0, shopOk=true, lastSaved=null;
 
@@ -370,7 +455,7 @@ app.get('/api/dashboard/:week', requireAuth, async (req, res) => {
     const grossProfit = totalRevenue - totalCOGS;
     const margin = totalRevenue > 0 ? Math.round((grossProfit / totalRevenue) * 100) : 0;
 
-    res.json({ week, range:weekRange(week), totalShops:shops.length,
+    res.json({ week, range:weekRange(week), totalShops:filteredShops.length,
       shopsReporting: shopStatuses.filter(s=>s.hasData).length,
       totalDelivered, totalSold, totalRemaining,
       totalRevenue, totalCOGS, grossProfit, margin,
@@ -393,6 +478,7 @@ app.get('/api/week', (_, res) => { const week = getWeekId(); res.json({ week, ra
 // ── Report: Excel ─────────────────────────────────────────────────────────────
 async function buildWorkbook(week) {
   const [stock, shops] = await Promise.all([storage.get('stock'), storage.get('shops')]);
+  const filteredShops = filterShops(shops);
   const weekData = stock[week] || {};
 
   const wb = new ExcelJS.Workbook();
@@ -549,6 +635,7 @@ app.post('/api/admin/reset', requireAuth, async (_, res) => {
       storage.set('shops', []),
       storage.set('shops_initialized', false),
       storage.set('access_log', []),
+      storage.set('warehouse', {}),
     ]);
     await addLog({ action: 'ADMIN_RESET', note: 'All data cleared' });
     res.json({ success: true });

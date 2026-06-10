@@ -485,6 +485,8 @@ async function buildWorkbook(week) {
   wb.creator = 'Flawless Inventory'; wb.created = new Date();
 
   const ws = wb.addWorksheet(`Week ${week}`, { pageSetup: { fitToPage:true, fitToWidth:1 } });
+  ws.views = [{ state:'frozen', ySplit:2 }];
+  ws.properties.defaultRowHeight = 18;
 
   ws.mergeCells('A1:J1');
   const title = ws.getCell('A1');
@@ -495,18 +497,20 @@ async function buildWorkbook(week) {
   ws.getRow(1).height = 28;
 
   const headers = ['Shop','Product','Category','Initial Qty','Qty Sold','Top-Up','Remaining','Sell Price (€)','Revenue (€)','Status'];
-  ws.columns = headers.map((h,i) => ({ header:h, key:h, width:[28,26,16,13,11,11,13,14,13,14][i] }));
+  const widths = [28,26,16,13,11,11,13,14,13,14];
+  ws.columns = headers.map((h,i) => ({ header:h, key:h, width:widths[i], style:{ alignment:{ horizontal:i<=2?'left':'center', vertical:'middle' } } }));
   const hRow = ws.getRow(2);
   hRow.values = headers;
   hRow.eachCell(c => {
     c.fill = { type:'pattern', pattern:'solid', fgColor:{argb:'FF1A1A1A'} };
     c.font = { name:'Calibri', bold:true, color:{argb:'FFE1CBBD'}, size:11 };
     c.alignment = { horizontal:'center', vertical:'middle' };
+    c.border = { top:{style:'thin',color:{argb:'FFB99A75'}}, left:{style:'thin',color:{argb:'FFB99A75'}}, bottom:{style:'thin',color:{argb:'FFB99A75'}}, right:{style:'thin',color:{argb:'FFB99A75'}} };
   });
   ws.getRow(2).height = 22;
 
   let rowIdx=3, hasMismatches=false;
-  shops.forEach(shop => {
+  filteredShops.forEach(shop => {
     PRODUCT_NAMES.forEach(product => {
       const pObj = PRODUCTS.find(p => p.name === product);
       const raw  = weekData[shop]?.[product];
@@ -530,6 +534,7 @@ async function buildWorkbook(week) {
           : low
             ? { type:'pattern', pattern:'solid', fgColor:{argb:'FFFFF3CD'} }
             : { type:'pattern', pattern:'solid', fgColor:{argb: rowIdx%2===0?'FFF9F0EC':'FFFFFFFF'} };
+        c.border = { top:{style:'thin',color:{argb:'FFB99A75'}}, left:{style:'thin',color:{argb:'FFB99A75'}}, bottom:{style:'thin',color:{argb:'FFB99A75'}}, right:{style:'thin',color:{argb:'FFB99A75'}} };
         if (bad) c.font = { ...c.font, bold:true };
       });
       row.getCell(10).font = { name:'Calibri', size:10, bold:bad||low,
@@ -542,7 +547,7 @@ async function buildWorkbook(week) {
   // Financial summary row
   rowIdx++;
   let totalRev=0, totalCOGS_=0;
-  shops.forEach(shop => {
+  filteredShops.forEach(shop => {
     PRODUCT_NAMES.forEach(product => {
       const pObj = PRODUCTS.find(p=>p.name===product);
       const raw  = weekData[shop]?.[product];
